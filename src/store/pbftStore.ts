@@ -65,6 +65,20 @@ export type PbftState = {
 	setRecentWindowMs: (ms: number) => void;
 	layoutScale: number; // affects node spacing
 	setLayoutScale: (s: number) => void;
+	// Visual clarity preferences
+	focusCurrentPhase: boolean; // dim non-current-phase messages
+	setFocusCurrentPhase: (on: boolean) => void;
+	showLabels: boolean; // show payload labels on edges without hover
+	setShowLabels: (on: boolean) => void;
+	hoveredNodeId: number | null; // globally hovered node to highlight incident edges
+	setHoveredNodeId: (id: number | null) => void;
+	// Global font scale (affects rem-based sizes via root font size)
+	fontScale: number;
+	setFontScale: (s: number) => void;
+	// View preference utilities
+	resetViewPrefs: () => void;
+	// Key to force-remount scene layers (edges/nodes) on hard resets to avoid lingering SVGs
+	sceneKey: number;
 	startNextRound: () => void;
 	toggleFaulty: (id: number) => void;
 };
@@ -75,17 +89,65 @@ function sceneOf(p: Phase): Scene {
 	return commitScene;
 }
 
+// Persist selected UI preferences to localStorage for better UX across reloads
+type ViewPrefs = {
+	showHistory: boolean;
+	recentWindowMs: number;
+	layoutScale: number;
+	focusCurrentPhase: boolean;
+	showLabels: boolean;
+	fontScale: number;
+	speed: number;
+	autoAdvance: boolean;
+	phaseDelayMs: number;
+};
+
+const PERSIST_KEY = 'pbft:viewPrefs:v1';
+
+function loadPrefs(): Partial<ViewPrefs> {
+	if (typeof window === 'undefined') return {};
+	try {
+		const raw = window.localStorage.getItem(PERSIST_KEY);
+		if (!raw) return {};
+		const parsed = JSON.parse(raw) as Partial<ViewPrefs>;
+		return parsed ?? {};
+	} catch {
+		return {};
+	}
+}
+
+function savePrefs(s: Pick<PbftState, keyof ViewPrefs>): void {
+	if (typeof window === 'undefined') return;
+	try {
+		const payload: ViewPrefs = {
+			showHistory: s.showHistory,
+			recentWindowMs: s.recentWindowMs,
+			layoutScale: s.layoutScale,
+			focusCurrentPhase: s.focusCurrentPhase,
+			showLabels: s.showLabels,
+			fontScale: s.fontScale,
+			speed: s.speed,
+			autoAdvance: s.autoAdvance,
+			phaseDelayMs: s.phaseDelayMs,
+		};
+		window.localStorage.setItem(PERSIST_KEY, JSON.stringify(payload));
+	} catch {
+		// Ignore persistence failures silently; UX-only enhancement.
+	}
+}
+
 export const usePbftStore = create<PbftState>((set, get) => {
 	const initialPhase: Phase = 'pre-prepare';
 	const initScene = sceneOf(initialPhase);
+	const pref = loadPrefs();
 
 	return {
 		t: 0,
 		phase: initialPhase,
 		playing: false,
-		speed: 1,
-		autoAdvance: true,
-		phaseDelayMs: 2000,
+		speed: pref.speed ?? 1,
+		autoAdvance: pref.autoAdvance ?? true,
+		phaseDelayMs: pref.phaseDelayMs ?? 2000,
 		phaseAdvanceDueAt: null,
 
 		round: 1,
@@ -107,10 +169,15 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		n: NODES,
 		f: F,
 
-		// Rendering preferences
-		showHistory: false,
-		recentWindowMs: 1600,
-		layoutScale: 1.3,
+		// Rendering preferences (with persisted defaults)
+		showHistory: pref.showHistory ?? false,
+		recentWindowMs: pref.recentWindowMs ?? 1600,
+		layoutScale: pref.layoutScale ?? 1.3,
+		focusCurrentPhase: pref.focusCurrentPhase ?? true,
+		showLabels: pref.showLabels ?? false,
+		hoveredNodeId: null,
+		fontScale: pref.fontScale ?? 1.0,
+		sceneKey: 0,
 
 		setPhase: (p) => {
 			const scene = sceneOf(p);
@@ -123,13 +190,14 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				logs: [],
 				phaseAdvanceDueAt: null,
 				nodeStats: [],
+				sceneKey: get().sceneKey + 1,
 			});
 		},
 
 		resetPhase: () => {
 			const { phase } = get();
 			const scene = sceneOf(phase);
-			set({ t: 0, timeline: [], playing: false, explanation: scene.steps[0]?.narration ?? '', logs: [], phaseAdvanceDueAt: null });
+			set({ t: 0, timeline: [], playing: false, explanation: scene.steps[0]?.narration ?? '', logs: [], phaseAdvanceDueAt: null, sceneKey: get().sceneKey + 1, hoveredNodeId: null });
 		},
 
 		// Reset everything to round 1 and initial phase, preserving node fault selections for experimentation
@@ -148,6 +216,8 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				expectedPayload: '+1',
 				explanation: scene.steps[0]?.narration ?? '',
 				nodeStats: [],
+				hoveredNodeId: null,
+				sceneKey: get().sceneKey + 1,
 			});
 		},
 
@@ -257,6 +327,17 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				return {};
 			});
 
+			// Prune logs similarly to prevent unbounded growth (keep last 1000 within 30s).
+			set((s) => {
+				const HARD_LIMIT = 1000;
+				const MAX_AGE_MS = 30000;
+				const pruned = s.logs.filter((l) => next - l.t <= MAX_AGE_MS).slice(-HARD_LIMIT);
+				if (pruned.length !== s.logs.length) {
+					return { logs: pruned } as Partial<PbftState>;
+				}
+				return {};
+			});
+
 			// Auto-advance to next phase once we've passed the last scheduled step, after an optional pause
 			const lastAt = scene.steps.reduce((max, s) => (s.atMs > max ? s.atMs : max), 0);
 			if (get().playing && autoAdvance && next > lastAt) {
@@ -302,11 +383,54 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		},
 
 		setSpeed: (s) => set({ speed: s }),
-		setAutoAdvance: (on) => set({ autoAdvance: on, phaseAdvanceDueAt: on ? get().phaseAdvanceDueAt : null }),
-		setPhaseDelay: (ms) => set({ phaseDelayMs: ms }),
-		setShowHistory: (on) => set({ showHistory: on }),
-		setRecentWindowMs: (ms) => set({ recentWindowMs: ms }),
-		setLayoutScale: (scl) => set({ layoutScale: scl }),
+		setAutoAdvance: (on) => {
+			set({ autoAdvance: on, phaseAdvanceDueAt: on ? get().phaseAdvanceDueAt : null });
+			savePrefs(get());
+		},
+		setPhaseDelay: (ms) => {
+			set({ phaseDelayMs: ms });
+			savePrefs(get());
+		},
+		setShowHistory: (on) => {
+			set({ showHistory: on });
+			savePrefs(get());
+		},
+		setRecentWindowMs: (ms) => {
+			set({ recentWindowMs: ms });
+			savePrefs(get());
+		},
+		setLayoutScale: (scl) => {
+			set({ layoutScale: scl });
+			savePrefs(get());
+		},
+		setFocusCurrentPhase: (on) => {
+			set({ focusCurrentPhase: on });
+			savePrefs(get());
+		},
+		setShowLabels: (on) => {
+			set({ showLabels: on });
+			savePrefs(get());
+		},
+		setHoveredNodeId: (id) => set({ hoveredNodeId: id }),
+		setFontScale: (fs) => {
+			set({ fontScale: Math.max(0.8, Math.min(1.6, fs)) });
+			savePrefs(get());
+		},
+
+		resetViewPrefs: () => {
+			set({
+				showHistory: false,
+				recentWindowMs: 1600,
+				layoutScale: 1.3,
+				focusCurrentPhase: true,
+				showLabels: false,
+				fontScale: 1.0,
+				speed: 1,
+				autoAdvance: true,
+				phaseDelayMs: 2000,
+			});
+			savePrefs(get());
+		},
 
 		startNextRound: () => {
 			const { nextIncrement, round } = get();
@@ -325,6 +449,7 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				logs: [...s.logs, { t: s.t, text: `==> Round ${newRound} start. Proposed delta ${newExpected}` }],
 				phaseAdvanceDueAt: null,
 				nodeStats: [],
+				sceneKey: s.sceneKey + 1,
 			}));
 		},
 
@@ -378,7 +503,7 @@ function computeNodeStats(s: Pick<PbftState, 'timeline' | 'expectedPayload' | 'p
 	const stats: Stat[] = Array.from({ length: s.n }, () => ({ prepare: 0, commit: 0, proposed: false, status: 'idle' }));
 	const ok = s.expectedPayload;
 	s.timeline.forEach((m) => {
-		const to = (m as any).to as number;
+		const to = m.to;
 		if (to == null || to < 0 || to >= s.n) return;
 		if (m.kind === 'pre-prepare' && !m.conflicting && (m.payload === ok)) stats[to].proposed = true;
 		if (m.kind === 'prepare' && !m.conflicting && m.payload === ok) stats[to].prepare += 1;

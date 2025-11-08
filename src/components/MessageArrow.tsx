@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { pathBetween } from '../utils/layout';
+import { usePbftStore } from '../store/pbftStore';
 
 
 export type MessageArrowProps = {
@@ -38,21 +39,27 @@ export default function MessageArrow({ id, from, to, fromId, toId, kind, conflic
 
 
   const [hover, setHover] = useState(false);
+  const { phase, focusCurrentPhase, hoveredNodeId, showLabels } = usePbftStore((s) => ({ phase: s.phase, focusCurrentPhase: s.focusCurrentPhase, hoveredNodeId: s.hoveredNodeId, showLabels: s.showLabels }));
+  // Dim messages not belonging to current phase when focusCurrentPhase is enabled.
+  const phaseAlpha = focusCurrentPhase && kind !== phase ? 0.15 : 1;
+  const hoverEmphasis = hoveredNodeId != null && (fromId === hoveredNodeId || toId === hoveredNodeId) ? 1 : 0.35;
+  const finalOpacity = alpha * phaseAlpha * hoverEmphasis;
   return (
     <g aria-label={`${kind} ${id}`} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
       <title>{`${kind.toUpperCase()} ${fromId != null ? `n${fromId}` : ''}${fromId != null || toId != null ? '->' : ''}${toId != null ? `n${toId}` : ''}${payload ? ` payload=${payload}` : ''}${conflicting ? ' (conflict)' : ''}`}</title>
       <motion.path
         id={`path-${id}`}
         d={d}
-        className={`${conflicting ? 'stroke-node-faulty' : colorByKind[kind]} ${conflicting ? 'stroke-[4px] stroke-dasharray-[7_7]' : 'stroke-[4px]'} fill-none`}
-        style={{ opacity: alpha * (conflicting ? 0.9 : 1) }}
+        className={`${conflicting ? 'stroke-node-faulty' : colorByKind[kind]} ${conflicting ? 'stroke-[5px] stroke-dasharray-[7_7]' : 'stroke-[4px]'} fill-none`}
+        style={{ opacity: finalOpacity * (conflicting ? 0.9 : 1) }}
         initial={{ pathLength: 0 }}
         animate={{ pathLength: 1 }}
         transition={{ duration, ease: 'easeOut' }}
         markerEnd="url(#arrowhead)"
+        filter={conflicting ? 'url(#conflictGlow)' : undefined}
       />
       {/* A traveling dot to emphasize direction */}
-      <motion.circle r={6} className={`${conflicting ? 'stroke-node-faulty fill-white' : `${colorByKind[kind]} fill-white`}`} style={{ opacity: alpha }}>
+      <motion.circle r={6} className={`${conflicting ? 'stroke-node-faulty fill-white' : `${colorByKind[kind]} fill-white`}`} style={{ opacity: finalOpacity }} filter={conflicting ? 'url(#conflictGlow)' : undefined}>
         <animateMotion
           path={d}
           dur={`${duration}s`}
@@ -64,13 +71,13 @@ export default function MessageArrow({ id, from, to, fromId, toId, kind, conflic
         />
       </motion.circle>
       {/* Payload label along the path */}
-      {payload && (
-        <g style={{ opacity: alpha }}>
+      {payload && (hover || showLabels) && (
+        <g style={{ opacity: finalOpacity }}>
           {/* Outline duplicate for better contrast on busy backgrounds */}
-          <text className="text-[11px] fill-white stroke-white stroke-[4px] opacity-80">
+          <text className="text-sm fill-white stroke-white stroke-[4px] opacity-80">
             <textPath href={`#path-${id}`} startOffset={offset} textAnchor="middle">{payload}</textPath>
           </text>
-          <text className={`text-[11px] ${conflicting ? 'fill-red-600' : 'fill-slate-700'}`}>
+          <text className={`text-sm ${conflicting ? 'fill-red-600' : 'fill-slate-700'}`}>
             <textPath href={`#path-${id}`} startOffset={offset} textAnchor="middle">{payload}</textPath>
           </text>
         </g>

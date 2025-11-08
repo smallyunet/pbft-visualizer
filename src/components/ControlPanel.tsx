@@ -1,10 +1,48 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { usePbftStore } from '../store/pbftStore';
+import { shallow } from 'zustand/shallow';
 
 
-export default function ControlPanel() {
-  const { phase, setPhase, resetPhase, resetAll, skipPhase, playing, togglePlay, step, speed, setSpeed, nodes, toggleFaulty, n, f, autoAdvance, setAutoAdvance, phaseDelayMs, setPhaseDelay, round, value, showHistory, setShowHistory, recentWindowMs, setRecentWindowMs, layoutScale, setLayoutScale } = usePbftStore();
+export default function ControlPanel(): React.ReactElement {
+  const { phase, setPhase, resetPhase, resetAll, skipPhase, playing, togglePlay, step, speed, setSpeed, nodes, toggleFaulty, n, f, autoAdvance, setAutoAdvance, phaseDelayMs, setPhaseDelay, round, value, showHistory, setShowHistory, recentWindowMs, setRecentWindowMs, layoutScale, setLayoutScale, focusCurrentPhase, setFocusCurrentPhase, showLabels, setShowLabels, fontScale, setFontScale, resetViewPrefs } = usePbftStore(
+    (s) => ({
+      phase: s.phase,
+      setPhase: s.setPhase,
+      resetPhase: s.resetPhase,
+      resetAll: s.resetAll,
+      skipPhase: s.skipPhase,
+      playing: s.playing,
+      togglePlay: s.togglePlay,
+      step: s.step,
+      speed: s.speed,
+      setSpeed: s.setSpeed,
+      nodes: s.nodes,
+      toggleFaulty: s.toggleFaulty,
+      n: s.n,
+      f: s.f,
+      autoAdvance: s.autoAdvance,
+      setAutoAdvance: s.setAutoAdvance,
+      phaseDelayMs: s.phaseDelayMs,
+      setPhaseDelay: s.setPhaseDelay,
+      round: s.round,
+      value: s.value,
+      showHistory: s.showHistory,
+      setShowHistory: s.setShowHistory,
+      recentWindowMs: s.recentWindowMs,
+      setRecentWindowMs: s.setRecentWindowMs,
+      layoutScale: s.layoutScale,
+      setLayoutScale: s.setLayoutScale,
+      focusCurrentPhase: s.focusCurrentPhase,
+      setFocusCurrentPhase: s.setFocusCurrentPhase,
+      showLabels: s.showLabels,
+      setShowLabels: s.setShowLabels,
+      fontScale: s.fontScale,
+      setFontScale: s.setFontScale,
+      resetViewPrefs: s.resetViewPrefs,
+    }),
+    shallow
+  );
 
 
   return (
@@ -17,7 +55,7 @@ export default function ControlPanel() {
         <button className="btn-outline" onClick={() => resetPhase()}>Reset phase</button>
         <button className="btn-outline" onClick={() => resetAll()}>Reset all</button>
         <button className="btn-outline" onClick={() => skipPhase()}>Skip phase</button>
-        <div className="flex items-center gap-1 text-xs ml-1">
+        <div className="flex items-center gap-1 text-[12px] ml-1">
           <span>Speed:</span>
           <select className="px-2 py-1 rounded bg-slate-100" value={speed} onChange={(e) => setSpeed(parseFloat(e.target.value))}>
             <option value={0.5}>0.5x</option>
@@ -30,7 +68,7 @@ export default function ControlPanel() {
           <input type="checkbox" checked={autoAdvance} onChange={(e) => setAutoAdvance(e.target.checked)} /> Auto‑advance
         </label>
         {autoAdvance && (
-          <div className="flex items-center gap-1 text-xs">
+          <div className="flex items-center gap-1 text-[12px]">
             <span>Phase pause:</span>
             <select className="px-2 py-1 rounded bg-slate-100" value={phaseDelayMs} onChange={(e) => setPhaseDelay(parseInt(e.target.value, 10))}>
               <option value={1000}>1.0s</option>
@@ -40,7 +78,7 @@ export default function ControlPanel() {
             </select>
           </div>
         )}
-        <div className="text-xs font-mono flex items-center gap-1 ml-2">
+        <div className="text-[12px] font-mono flex items-center gap-1 ml-2">
           <span>Value:</span>
           <motion.span
             key={value}
@@ -56,7 +94,7 @@ export default function ControlPanel() {
       </div>
 
       {/* Phase */}
-      <div className="panel-group">
+  <div className="panel-group text-sm">
         <span className="panel-title">Phase</span>
         <button className={phase === 'pre-prepare' ? 'btn-primary' : 'btn-outline'} onClick={() => setPhase('pre-prepare')}>Pre‑prepare</button>
         <button className={phase === 'prepare' ? 'btn-primary' : 'btn-outline'} onClick={() => setPhase('prepare')}>Prepare</button>
@@ -64,7 +102,7 @@ export default function ControlPanel() {
       </div>
 
       {/* Fault injection */}
-      <div className="panel-group">
+  <div className="panel-group text-sm">
         <span className="panel-title">Fault</span>
         {nodes.map((n) => (
           <button
@@ -78,19 +116,40 @@ export default function ControlPanel() {
       </div>
 
       {/* Boundary parameters */}
-      <div className="panel-group">
+  <div className="panel-group text-sm">
         <span className="panel-title">Parameters</span>
         <div className="text-xs">n = {n}, f = (n − 1) / 3 = {f}, tolerate up to {f} Byzantine nodes</div>
       </div>
 
       {/* View preferences */}
-      <div className="panel-group">
+  <div className="panel-group text-sm">
         <span className="panel-title">View</span>
-        <label className="flex items-center gap-1 text-xs">
+        <label className="flex items-center gap-1 text-sm">
           <input type="checkbox" checked={showHistory} onChange={(e) => setShowHistory(e.target.checked)} /> Show all history
         </label>
+        <label className="flex items-center gap-1 text-sm">
+          <input type="checkbox" checked={focusCurrentPhase} onChange={(e) => setFocusCurrentPhase(e.target.checked)} /> Focus current phase
+        </label>
+        <label className="flex items-center gap-1 text-sm">
+          <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} /> Show labels
+        </label>
+        <div className="flex items-center gap-2 text-sm">
+          <span>Font scale:</span>
+          <input
+            type="range"
+            min={0.8}
+            max={1.6}
+            step={0.05}
+            value={fontScale}
+            onChange={(e) => setFontScale(parseFloat(e.target.value))}
+          />
+          <span className="font-mono">{fontScale.toFixed(2)}x</span>
+        </div>
+        <div>
+          <button className="btn-outline" onClick={() => resetViewPrefs()}>Reset view</button>
+        </div>
         {!showHistory && (
-          <div className="flex items-center gap-1 text-xs">
+          <div className="flex items-center gap-1 text-[12px]">
             <span>Recent window:</span>
             <select
               className="px-2 py-1 rounded bg-slate-100"
@@ -104,7 +163,7 @@ export default function ControlPanel() {
             </select>
           </div>
         )}
-        <div className="flex items-center gap-2 text-xs">
+        <div className="flex items-center gap-2 text-[12px]">
           <span>Layout scale:</span>
           <input
             type="range"

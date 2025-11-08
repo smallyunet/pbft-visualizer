@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function Legend() {
   return (
-    <div className="bg-white rounded-xl shadow p-3 text-xs">
+  <div className="bg-white rounded-xl shadow p-3 text-sm">
       <div className="uppercase tracking-wide text-slate-500 mb-2">Legend</div>
       <ul className="space-y-1">
         <li className="legend-item">
