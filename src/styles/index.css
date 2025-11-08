@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Small utility classes for labels and badges used in teaching overlays */
+.label {
+  @apply text-xs font-medium rounded px-1.5 py-0.5 bg-slate-800 text-white shadow;
+}
+
+.badge {
+  @apply text-[10px] uppercase tracking-wide rounded px-1 py-0.5 bg-slate-200 text-slate-700;
+}
+
+/* Explicit stroke/fill classes for custom SVG styling (Tailwind does not provide these by default). */
+.stroke-stage-pre {
+  stroke: #0ea5e9;
+}
+
+.stroke-stage-prepare {
+  stroke: #a855f7;
+}
+
+.stroke-stage-commit {
+  stroke: #f59e0b;
+}
+
+.stroke-node-faulty {
+  stroke: #dc2626;
+}
+
+.fill-node-leader {
+  fill: #16a34a;
+}
+
+.fill-node-normal {
+  fill: #2563eb;
+}
+
+/* Legend layout helpers */
+.legend-item {
+  @apply flex items-center gap-2 text-xs text-slate-600;
+}
+
+/* Progress bar */
+.progress-bg {
+  background: #e2e8f0;
+}
+
+.progress-fill {
+  background: linear-gradient(90deg, #0ea5e9, #a855f7, #f59e0b);
+  transition: width 0.4s ease;
+}
+
+/* Button styling for consistent UI */
+.btn {
+  @apply px-2 py-1 rounded text-sm font-medium transition-colors;
+}
+
+.btn-primary {
+  @apply btn bg-slate-800 text-white hover:bg-slate-700 active:bg-slate-900;
+}
+
+.btn-outline {
+  @apply btn bg-slate-200 text-slate-700 hover:bg-slate-300 active:bg-slate-400;
+}
+
+.btn-danger {
+  @apply btn bg-red-600 text-white hover:bg-red-500 active:bg-red-700;
+}
+
+/* Panel group header */
+.panel-group {
+  /* Softer background, subtle ring instead of heavier shadow for cleaner look */
+  @apply flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-xl shadow-sm ring-1 ring-slate-200 px-3 py-2 flex-wrap;
+}
+
+.panel-title {
+  @apply text-[10px] font-semibold tracking-wide uppercase text-slate-500;
+}
+
+/* Animated badge when value changes */
+.value-badge {
+  @apply inline-flex items-center justify-center rounded px-2 py-0.5 font-mono text-xs bg-indigo-600 text-white shadow;
+}
+/* Tooltip card */
+.tooltip-card { @apply bg-white/95 backdrop-blur-sm rounded-lg shadow px-2 py-1 text-[11px] font-mono text-slate-700 border border-slate-200; }
+.tooltip-title { @apply font-semibold text-slate-900 text-[12px] mb-0.5; }
+.tooltip-grid { @apply grid grid-cols-2 gap-x-2 gap-y-0.5; }
+
+/* Softer default stroke for normal nodes (slate-600) */
+.stroke-node-normal-stroke { stroke: #475569; }
+
+/* Radial background gradient (referenced in <App />) */
+.viz-bg { fill: url(#vizRadial); }
