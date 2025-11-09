@@ -2,9 +2,9 @@ import React from 'react';
 
 export default function Legend() {
   return (
-  <div className="bg-white rounded-xl shadow p-3 text-sm">
-      <div className="uppercase tracking-wide text-slate-500 mb-2">Legend</div>
-      <ul className="space-y-1">
+  <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg border border-slate-200/50 p-4 text-sm transition-all duration-300 hover:shadow-xl">
+      <div className="uppercase tracking-wide text-slate-500 font-semibold text-xs mb-3">Legend</div>
+      <ul className="space-y-2">
         <li className="legend-item">
           <svg width={34} height={12}><line x1={2} y1={6} x2={32} y2={6} className="stroke-stage-pre stroke-[3px]" /></svg>
           Pre‑prepare

@@ -25,11 +25,11 @@ export default function ConsensusProgress(): React.ReactElement | null {
   if (phase === 'pre-prepare') return null;
 
   return (
-    <div className="bg-white rounded-xl shadow p-3 text-sm">
-      <div className="uppercase tracking-wide text-slate-500 mb-1">Threshold</div>
-      <div className="mb-1 text-slate-700 text-sm">Collected {current} / {needed} {phase === 'prepare' ? 'PREPARE' : 'COMMIT'} messages (need 2f+1)</div>
-      <div className="progress-bg w-full h-3 rounded overflow-hidden">
-        <div className="progress-fill h-3" style={{ width: pct + '%' }} />
+    <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg border border-slate-200/50 p-4 transition-all duration-300 hover:shadow-xl">
+      <div className="uppercase tracking-wide text-slate-500 font-semibold text-xs mb-2">Threshold</div>
+      <div className="mb-2 text-slate-700 text-sm font-medium">Collected {current} / {needed} {phase === 'prepare' ? 'PREPARE' : 'COMMIT'} messages (need 2f+1)</div>
+      <div className="progress-bg w-full h-4 rounded-full overflow-hidden">
+        <div className="progress-fill h-4" style={{ width: pct + '%' }} />
       </div>
     </div>
   );

@@ -48,17 +48,33 @@ export default function Node({ node, x, y }: NodeProps) {
       <motion.circle
         r={36}
         className={`${roleColor(node.role)} ${strokeByState(node.state)} stroke-[4px]`}
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        whileHover={{ scale: 1.05 }}
-        transition={{ type: 'spring', stiffness: 220, damping: 18 }}
+        initial={{ scale: 0, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        whileHover={{ scale: 1.08 }}
+        transition={{ type: 'spring', stiffness: 260, damping: 20 }}
         filter={node.role === 'leader' ? 'url(#leaderGlow)' : undefined}
       />
       {pulse && (
-        <circle cx={0} cy={0} r={46} className="fill-transparent stroke-sky-400/40">
-          <animate attributeName="r" values="40;54;40" dur="2s" repeatCount="indefinite" />
-          <animate attributeName="opacity" values="0.5;0;0.5" dur="2s" repeatCount="indefinite" />
-        </circle>
+        <>
+          <motion.circle
+            cx={0}
+            cy={0}
+            r={36}
+            className="fill-transparent stroke-sky-400/50 stroke-[2px]"
+            initial={{ r: 36, opacity: 0.6 }}
+            animate={{ r: 58, opacity: 0 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeOut' }}
+          />
+          <motion.circle
+            cx={0}
+            cy={0}
+            r={36}
+            className="fill-transparent stroke-purple-400/50 stroke-[2px]"
+            initial={{ r: 36, opacity: 0.6 }}
+            animate={{ r: 58, opacity: 0 }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeOut', delay: 0.5 }}
+          />
+        </>
       )}
       <text x={0} y={2} textAnchor="middle" className="fill-white font-bold text-base select-none">
         {node.role === 'leader' ? 'Leader' : `N${node.id}`}
@@ -72,10 +88,10 @@ export default function Node({ node, x, y }: NodeProps) {
             {/* Animate status transitions for better affordance */}
             <motion.div
               key={status}
-              initial={{ scale: 0.8, opacity: 0.0 }}
-              animate={{ scale: 1.0, opacity: 1 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 20 }}
-              className={`text-sm leading-tight text-white text-center rounded ${badgeColor} px-1 py-[3px] font-mono`}
+              initial={{ scale: 0.7, opacity: 0.0, y: -5 }}
+              animate={{ scale: 1.0, opacity: 1, y: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 22 }}
+              className={`text-sm leading-tight text-white text-center rounded-md shadow-lg ${badgeColor} px-2 py-[3px] font-mono`}
             >
               {status}
             </motion.div>
@@ -83,10 +99,10 @@ export default function Node({ node, x, y }: NodeProps) {
         </foreignObject>
       )}
       {/* Per-node counts: PREP/COM towards 2f+1 */}
-      <foreignObject x={-42} y={70} width={84} height={26}>
-        <div className="w-full text-sm leading-tight text-center flex items-center justify-center gap-1">
-          <span className={`rounded px-1 shadow-sm ${prepClass}`}>P {stats?.prepare ?? 0}/{needed}</span>
-          <span className={`rounded px-1 shadow-sm ${commClass}`}>C {stats?.commit ?? 0}/{needed}</span>
+      <foreignObject x={-50} y={70} width={100} height={28}>
+        <div className="w-full text-xs leading-tight text-center flex items-center justify-center gap-1.5">
+          <span className={`rounded-md px-1.5 py-0.5 shadow-sm font-semibold ${prepClass}`}>P {stats?.prepare ?? 0}/{needed}</span>
+          <span className={`rounded-md px-1.5 py-0.5 shadow-sm font-semibold ${commClass}`}>C {stats?.commit ?? 0}/{needed}</span>
         </div>
       </foreignObject>
       {/* Show proposed delta on leader for clarity */}

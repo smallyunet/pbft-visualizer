@@ -2,10 +2,54 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom keyframe animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
 
 /* Small utility classes for labels and badges used in teaching overlays */
 .label {
-  @apply text-xs font-medium rounded px-1.5 py-0.5 bg-slate-800 text-white shadow;
+  @apply text-xs font-medium rounded-md px-1.5 py-0.5 bg-slate-800 text-white shadow-md;
+  transition: all 0.2s ease;
+}
+
+.label:hover {
+  @apply shadow-lg scale-105;
 }
 
 .badge {
@@ -44,35 +88,60 @@
 
 /* Progress bar */
 .progress-bg {
-  background: #e2e8f0;
+  background: linear-gradient(to right, #e2e8f0, #cbd5e1);
+  border-radius: 9999px;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
 }
 
 .progress-fill {
   background: linear-gradient(90deg, #0ea5e9, #a855f7, #f59e0b);
-  transition: width 0.4s ease;
+  background-size: 200% 100%;
+  animation: shimmer 3s ease-in-out infinite;
+  transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(168, 85, 247, 0.4);
 }
 
 /* Button styling for consistent UI */
 .btn {
-  @apply px-2 py-1 rounded text-sm font-medium transition-colors;
+  @apply px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200;
+  transform: translateY(0);
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary {
-  @apply btn bg-slate-800 text-white hover:bg-slate-700 active:bg-slate-900;
+  @apply btn bg-gradient-to-r from-slate-800 to-slate-700 text-white hover:from-slate-700 hover:to-slate-600 active:from-slate-900 active:to-slate-800;
 }
 
 .btn-outline {
-  @apply btn bg-slate-200 text-slate-700 hover:bg-slate-300 active:bg-slate-400;
+  @apply btn bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:border-slate-400 active:bg-slate-100;
 }
 
 .btn-danger {
-  @apply btn bg-red-600 text-white hover:bg-red-500 active:bg-red-700;
+  @apply btn bg-gradient-to-r from-red-600 to-red-500 text-white hover:from-red-500 hover:to-red-400 active:from-red-700 active:to-red-600;
 }
 
 /* Panel group header */
 .panel-group {
   /* Softer background, subtle ring instead of heavier shadow for cleaner look */
-  @apply flex items-center gap-2 bg-white/90 backdrop-blur-sm rounded-xl shadow-sm ring-1 ring-slate-200 px-3 py-2 flex-wrap;
+  @apply flex items-center gap-2 backdrop-blur-md rounded-xl shadow-md ring-1 px-3 py-2 flex-wrap;
+  background-color: rgba(255, 255, 255, 0.95);
+  --tw-ring-color: rgba(226, 232, 240, 0.5);
+  transition: all 0.3s ease;
+}
+
+.panel-group:hover {
+  @apply shadow-lg;
+  --tw-ring-color: rgba(203, 213, 225, 0.6);
 }
 
 .panel-title {
@@ -81,12 +150,20 @@
 
 /* Animated badge when value changes */
 .value-badge {
-  @apply inline-flex items-center justify-center rounded px-2 py-0.5 font-mono text-sm bg-indigo-600 text-white shadow;
+  @apply inline-flex items-center justify-center rounded-md px-2 py-0.5 font-mono text-sm bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md;
+  transition: all 0.3s ease;
+}
+
+.value-badge:hover {
+  @apply shadow-lg scale-105;
 }
 
 /* Tooltip card */
 .tooltip-card {
-  @apply bg-white/95 backdrop-blur-sm rounded-lg shadow px-2 py-1 text-[12px] font-mono text-slate-700 border border-slate-200;
+  @apply bg-white backdrop-blur-md rounded-xl shadow-xl px-3 py-2 text-[12px] font-mono text-slate-700 border border-slate-200;
+  background-color: rgba(255, 255, 255, 0.98);
+  border-color: rgba(226, 232, 240, 0.6);
+  animation: fade-in 0.2s ease-out;
 }
 
 .tooltip-title {

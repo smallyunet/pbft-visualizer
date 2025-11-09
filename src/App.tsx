@@ -58,19 +58,19 @@ export default function App(): React.ReactElement {
 
 
 	return (
-	<div className="min-h-screen p-6" style={{ fontSize: `${fontScale * 16}px` }}>
-			<div className="max-w-6xl mx-auto flex flex-col gap-4">
-				<header className="flex items-end justify-between gap-4">
+	<div className="min-h-screen p-6 bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50" style={{ fontSize: `${fontScale * 16}px` }}>
+			<div className="max-w-7xl mx-auto flex flex-col gap-6">
+				<header className="flex items-end justify-between gap-6 animate-fade-in">
 					<div>
-						<h1 className="text-2xl font-semibold">PBFT Visualizer</h1>
-						<div className="text-slate-500">Interactive, teaching‑oriented animation of Pre‑prepare → Prepare → Commit</div>
+						<h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">PBFT Visualizer</h1>
+						<div className="text-slate-600 mt-1">Interactive, teaching‑oriented animation of Pre‑prepare → Prepare → Commit</div>
 					</div>
 					<ControlPanel />
 				</header>
 
 
-				<main className="grid grid-cols-3 gap-4">
-					<section className="col-span-2 bg-white rounded-xl shadow p-3">
+				<main className="grid grid-cols-3 gap-6">
+					<section className="col-span-2 bg-white/90 backdrop-blur-sm rounded-2xl shadow-xl border border-white/20 p-4 transition-all duration-300 hover:shadow-2xl">
 						<svg viewBox={`0 0 ${size.w} ${size.h}`} className="w-full h-[680px]">
 							{/* Reusable arrowhead marker */}
 							<defs>
@@ -155,7 +155,7 @@ export default function App(): React.ReactElement {
 				</main>
 
 
-				<footer className="text-center text-xs text-slate-500 pt-2">
+				<footer className="text-center text-xs text-slate-500 pt-4 pb-2 animate-fade-in">
 					Built with React, SVG, Framer Motion, and Zustand. Focus mode dims non‑{phase.toUpperCase()} messages.
 				</footer>
 			</div>

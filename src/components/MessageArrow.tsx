@@ -44,6 +44,29 @@ export default function MessageArrow({ id, from, to, fromId, toId, kind, conflic
   const phaseAlpha = focusCurrentPhase && kind !== phase ? 0.15 : 1;
   const hoverEmphasis = hoveredNodeId != null && (fromId === hoveredNodeId || toId === hoveredNodeId) ? 1 : 0.35;
   const finalOpacity = alpha * phaseAlpha * hoverEmphasis;
+  // Compute arrow head geometry manually so we can delay its appearance until line mostly drawn.
+  const headSize = 14; // visual size of arrow head
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const len = Math.sqrt(dx * dx + dy * dy);
+  const angle = Math.atan2(dy, dx);
+  // Points for triangle (tip at 'to') rotated by angle.
+  const makeHeadPath = () => {
+    if (len === 0) { return ''; }
+    const tipX = to.x;
+    const tipY = to.y;
+    const backX = tipX - Math.cos(angle) * headSize;
+    const backY = tipY - Math.sin(angle) * headSize;
+    const orthoX = -Math.sin(angle);
+    const orthoY = Math.cos(angle);
+    const wingSpread = headSize * 0.45;
+    const leftX = backX + orthoX * wingSpread;
+    const leftY = backY + orthoY * wingSpread;
+    const rightX = backX - orthoX * wingSpread;
+    const rightY = backY - orthoY * wingSpread;
+    return `M ${tipX} ${tipY} L ${leftX} ${leftY} L ${rightX} ${rightY} Z`;
+  };
+
   return (
     <g aria-label={`${kind} ${id}`} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}>
       <title>{`${kind.toUpperCase()} ${fromId != null ? `n${fromId}` : ''}${fromId != null || toId != null ? '->' : ''}${toId != null ? `n${toId}` : ''}${payload ? ` payload=${payload}` : ''}${conflicting ? ' (conflict)' : ''}`}</title>
@@ -52,14 +75,35 @@ export default function MessageArrow({ id, from, to, fromId, toId, kind, conflic
         d={d}
         className={`${conflicting ? 'stroke-node-faulty' : colorByKind[kind]} ${conflicting ? 'stroke-[5px] stroke-dasharray-[7_7]' : 'stroke-[4px]'} fill-none`}
         style={{ opacity: finalOpacity * (conflicting ? 0.9 : 1) }}
-        initial={{ pathLength: 0 }}
-        animate={{ pathLength: 1 }}
-        transition={{ duration, ease: 'easeOut' }}
-        markerEnd="url(#arrowhead)"
-        filter={conflicting ? 'url(#conflictGlow)' : undefined}
+        // Use pathLength animation for stroke reveal only; remove markerEnd to prevent premature head display.
+        initial={{ pathLength: 0, opacity: 0 }}
+        animate={{ pathLength: 1, opacity: finalOpacity * (conflicting ? 0.9 : 1) }}
+        transition={{ duration, ease: [0.4, 0, 0.2, 1] }}
+        filter={conflicting ? 'url(#conflictGlow)' : hover ? 'url(#edgeGlow)' : undefined}
       />
+      {/* Arrow head rendered separately; delayed so line begins drawing first. */}
+      {len > 0 && (
+        <motion.path
+          d={makeHeadPath()}
+          className={`${conflicting ? 'stroke-node-faulty' : colorByKind[kind]} fill-none stroke-[4px]`}
+          style={{ opacity: finalOpacity }}
+          initial={{ opacity: 0, scale: 0.3 }}
+          animate={{ opacity: finalOpacity, scale: 1 }}
+          transition={{ delay: duration * 0.65, duration: 0.35, ease: 'easeOut' }}
+          filter={conflicting ? 'url(#conflictGlow)' : hover ? 'url(#edgeGlow)' : undefined}
+          strokeLinejoin="round"
+        />
+      )}
       {/* A traveling dot to emphasize direction */}
-      <motion.circle r={6} className={`${conflicting ? 'stroke-node-faulty fill-white' : `${colorByKind[kind]} fill-white`}`} style={{ opacity: finalOpacity }} filter={conflicting ? 'url(#conflictGlow)' : undefined}>
+      <motion.circle
+        r={6}
+        className={`${conflicting ? 'stroke-node-faulty fill-white' : `${colorByKind[kind]} fill-white`} stroke-[2px]`}
+        style={{ opacity: finalOpacity }}
+        filter={conflicting ? 'url(#conflictGlow)' : undefined}
+        initial={{ scale: 0.8 }}
+        animate={{ scale: [0.8, 1.1, 1] }}
+        transition={{ duration: 0.4, ease: 'easeOut' }}
+      >
         <animateMotion
           path={d}
           dur={`${duration}s`}
