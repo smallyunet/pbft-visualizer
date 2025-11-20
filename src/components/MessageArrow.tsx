@@ -28,7 +28,13 @@ const colorByKind: Record<MessageArrowProps['kind'], string> = {
 
 // Default duration aligned with STEP_MS in phases to complete before next batch.
 export default function MessageArrow({ id, from, to, fromId, toId, kind, conflicting, duration = 1.1, payload, alpha = 1 }: MessageArrowProps) {
-  const d = useMemo(() => pathBetween(from, to), [from, to]);
+  const d = useMemo(() => {
+    // Add tiny deterministic curvature jitter so parallel edges are easier to distinguish
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 131 + id.charCodeAt(i)) >>> 0;
+    const jitter = ((h % 7) - 3) * 1.2; // approx [-3.6, +3.6]
+    return pathBetween(from, to, jitter);
+  }, [from, to, id]);
   const offset = useMemo(() => {
     // Deterministic small offset to reduce label overlap among parallel edges
     let h = 0;
@@ -45,7 +51,7 @@ export default function MessageArrow({ id, from, to, fromId, toId, kind, conflic
   const hoverEmphasis = hoveredNodeId != null && (fromId === hoveredNodeId || toId === hoveredNodeId) ? 1 : 0.35;
   const finalOpacity = alpha * phaseAlpha * hoverEmphasis;
   // Compute arrow head geometry manually so we can delay its appearance until line mostly drawn.
-  const headSize = 14; // visual size of arrow head
+  const headSize = 12; // slightly smaller to reduce overlap
   const dx = to.x - from.x;
   const dy = to.y - from.y;
   const len = Math.sqrt(dx * dx + dy * dy);
@@ -78,7 +84,7 @@ export default function MessageArrow({ id, from, to, fromId, toId, kind, conflic
         // Use pathLength animation for stroke reveal only; remove markerEnd to prevent premature head display.
         initial={{ pathLength: 0, opacity: 0 }}
         animate={{ pathLength: 1, opacity: finalOpacity * (conflicting ? 0.9 : 1) }}
-        transition={{ duration, ease: [0.4, 0, 0.2, 1] }}
+        transition={{ duration, ease: [0.3, 0, 0.2, 1] }}
         filter={conflicting ? 'url(#conflictGlow)' : hover ? 'url(#edgeGlow)' : undefined}
       />
       {/* Arrow head rendered separately; delayed so line begins drawing first. */}
@@ -118,10 +124,10 @@ export default function MessageArrow({ id, from, to, fromId, toId, kind, conflic
       {payload && (hover || showLabels) && (
         <g style={{ opacity: finalOpacity }}>
           {/* Outline duplicate for better contrast on busy backgrounds */}
-          <text className="text-sm fill-white stroke-white stroke-[4px] opacity-80">
+          <text className="text-[12px] fill-white stroke-white stroke-[4px] opacity-80">
             <textPath href={`#path-${id}`} startOffset={offset} textAnchor="middle">{payload}</textPath>
           </text>
-          <text className={`text-sm ${conflicting ? 'fill-red-600' : 'fill-slate-700'}`}>
+          <text className={`${conflicting ? 'fill-red-600' : 'fill-slate-700'} text-[12px]`}>
             <textPath href={`#path-${id}`} startOffset={offset} textAnchor="middle">{payload}</textPath>
           </text>
         </g>

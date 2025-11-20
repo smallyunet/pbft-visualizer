@@ -102,6 +102,9 @@
   box-shadow: 0 2px 8px rgba(168, 85, 247, 0.4);
 }
 
+/* Subtle top banner fill used in SVG */
+.fill-white\/60 { fill: rgba(255,255,255,0.6); }
+
 /* Button styling for consistent UI */
 .btn {
   @apply px-3 py-1.5 rounded-lg text-sm font-medium transition-all duration-200;

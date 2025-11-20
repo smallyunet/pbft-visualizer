@@ -12,7 +12,7 @@ export function radialPositions(count: number, cx: number, cy: number, r: number
 }
 
 
-export function pathBetween(a: Point, b: Point): string {
+export function pathBetween(a: Point, b: Point, jitter: number = 0): string {
   // Slight curvature for aesthetics and message readability.
   const mx = (a.x + b.x) / 2;
   const my = (a.y + b.y) / 2;
@@ -21,7 +21,8 @@ export function pathBetween(a: Point, b: Point): string {
   const norm = Math.hypot(dx, dy) || 1;
   const nx = -dy / norm; // perpendicular unit vector
   const ny = dx / norm;
-  const curve = 48; // curvature radius in px (slightly larger for bigger layout)
+  // curvature radius in px with a tiny deterministic jitter to reduce visual overlap among many parallel edges
+  const curve = 48 + jitter;
   const c1x = mx + nx * curve;
   const c1y = my + ny * curve;
   return `M ${a.x} ${a.y} Q ${c1x} ${c1y} ${b.x} ${b.y}`;

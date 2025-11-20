@@ -53,12 +53,21 @@ export const prePrepareScene: Scene = {
   ],
 };
 
-// Prepare phase script (replicas broadcast PREPARE to all). Only scaffolded here.
+// Prepare phase script (all nodes, including leader, broadcast PREPARE to all).
 export const prepareScene: Scene = {
   phase: 'prepare',
   steps: [
     {
       atMs: 0,
+      narration: 'Leader also acts as a replica: it records its own PREPARE vote and multicasts PREPARE for v.',
+      messages: [
+        { id: 'pr-0-1', from: 0, to: 1, kind: 'prepare', payload: 'v' },
+        { id: 'pr-0-2', from: 0, to: 2, kind: 'prepare', payload: 'v' },
+        { id: 'pr-0-3', from: 0, to: 3, kind: 'prepare', payload: 'v' },
+      ],
+    },
+    {
+      atMs: STEP_MS,
       narration: 'Replica n1 broadcasts PREPARE for v to all nodes.',
       messages: [
         { id: 'pr-1', from: 1, to: 0, kind: 'prepare', payload: 'v' },
@@ -67,7 +76,7 @@ export const prepareScene: Scene = {
       ],
     },
     {
-      atMs: STEP_MS,
+      atMs: STEP_MS * 2,
       narration: 'Replica n2 broadcasts PREPARE for v to all nodes.',
       messages: [
         { id: 'pr-4', from: 2, to: 0, kind: 'prepare', payload: 'v' },
@@ -76,7 +85,7 @@ export const prepareScene: Scene = {
       ],
     },
     {
-      atMs: STEP_MS * 2,
+      atMs: STEP_MS * 3,
       narration: 'Replica n3 broadcasts PREPARE for v to all nodes. Replicas collect 2f + 1 matching PREPARE messages.',
       messages: [
         { id: 'pr-7', from: 3, to: 0, kind: 'prepare', payload: 'v' },
@@ -85,33 +94,60 @@ export const prepareScene: Scene = {
       ],
     },
     {
-      atMs: STEP_MS * 3,
-      narration: 'Condition met (2f + 1 PREPARE). System is ready to enter COMMIT phase.',
+      atMs: STEP_MS * 4,
+      narration: 'Condition met (2f + 1 PREPARE including own vote per node). System is ready to enter COMMIT phase.',
       messages: [],
     },
   ],
 };
 
-// Commit phase script (upon 2f + 1 PREPARE, broadcast COMMIT). Only scaffolded here.
+// Commit phase script (upon 2f + 1 PREPARE, each node broadcasts COMMIT).
 export const commitScene: Scene = {
   phase: 'commit',
   steps: [
     {
       atMs: 0,
-      narration: 'Upon collecting 2f + 1 PREPARE for v, replicas broadcast COMMIT to all.',
+      narration: 'Prepared replicas (including leader) broadcast COMMIT to all, counting their own vote locally.',
       messages: [
-        { id: 'cm-1', from: 0, to: 1, kind: 'commit', payload: 'v' },
-        { id: 'cm-2', from: 0, to: 2, kind: 'commit', payload: 'v' },
-        { id: 'cm-3', from: 0, to: 3, kind: 'commit', payload: 'v' },
+        { id: 'cm-0-1', from: 0, to: 1, kind: 'commit', payload: 'v' },
+        { id: 'cm-0-2', from: 0, to: 2, kind: 'commit', payload: 'v' },
+        { id: 'cm-0-3', from: 0, to: 3, kind: 'commit', payload: 'v' },
       ],
     },
     {
       atMs: STEP_MS,
+      narration: 'Replica n1 announces COMMIT for v to all.',
+      messages: [
+        { id: 'cm-1-0', from: 1, to: 0, kind: 'commit', payload: 'v' },
+        { id: 'cm-1-2', from: 1, to: 2, kind: 'commit', payload: 'v' },
+        { id: 'cm-1-3', from: 1, to: 3, kind: 'commit', payload: 'v' },
+      ],
+    },
+    {
+      atMs: STEP_MS * 2,
+      narration: 'Replica n2 announces COMMIT for v to all.',
+      messages: [
+        { id: 'cm-2-0', from: 2, to: 0, kind: 'commit', payload: 'v' },
+        { id: 'cm-2-1', from: 2, to: 1, kind: 'commit', payload: 'v' },
+        { id: 'cm-2-3', from: 2, to: 3, kind: 'commit', payload: 'v' },
+      ],
+    },
+    {
+      atMs: STEP_MS * 3,
+      narration: 'Replica n3 announces COMMIT for v to all. Honest nodes gather 2f + 1 COMMIT messages.',
+      messages: [
+        { id: 'cm-3-0', from: 3, to: 0, kind: 'commit', payload: 'v' },
+        { id: 'cm-3-1', from: 3, to: 1, kind: 'commit', payload: 'v' },
+        { id: 'cm-3-2', from: 3, to: 2, kind: 'commit', payload: 'v' },
+      ],
+    },
+    {
+      atMs: STEP_MS * 4,
       narration: 'Replicas collect 2f + 1 COMMIT messages, locally executing value v (decision).',
       messages: [],
     },
     {
-      atMs: STEP_MS * 2,
+      atMs: STEP_MS * 5,
       narration: 'Consensus achieved for value v. Protocol round complete.',
       messages: [],
     },

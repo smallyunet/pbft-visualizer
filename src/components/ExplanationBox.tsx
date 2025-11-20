@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
 import { usePbftStore } from '../store/pbftStore';
-import type { PbftState, RenderedMessage } from '../store/pbftStore';
+import type { PbftState } from '../store/pbftStore';
 import { shallow } from 'zustand/shallow';
 
 
 export default function ExplanationBox(): React.ReactElement {
-  const { phase, explanation, f, round, value, nextIncrement, expectedPayload, timeline } = usePbftStore(
+  const { phase, explanation, f, round, value, nextIncrement, expectedPayload, nodeStats, nodes } = usePbftStore(
     (s: PbftState) => ({
       phase: s.phase,
       explanation: s.explanation,
@@ -14,14 +14,22 @@ export default function ExplanationBox(): React.ReactElement {
       value: s.value,
       nextIncrement: s.nextIncrement,
       expectedPayload: s.expectedPayload,
-      timeline: s.timeline,
+      nodeStats: s.nodeStats,
+      nodes: s.nodes,
     }),
     shallow
   );
   const title = phase === 'pre-prepare' ? 'Pre‑prepare' : phase === 'prepare' ? 'Prepare' : 'Commit';
   const needed = 2 * f + 1;
-  const prepareCollected = useMemo(() => timeline.filter((m: RenderedMessage) => m.kind === 'prepare' && !m.conflicting && m.payload === expectedPayload).length, [timeline, expectedPayload]);
-  const commitCollected = useMemo(() => timeline.filter((m: RenderedMessage) => m.kind === 'commit' && !m.conflicting && m.payload === expectedPayload).length, [timeline, expectedPayload]);
+  const healthy = useMemo(() => nodeStats.filter((_, idx) => nodes[idx]?.state !== 'faulty'), [nodeStats, nodes]);
+  const prepareCollected = useMemo(() => {
+    if (!healthy.length) return 0;
+    return Math.min(...healthy.map((st) => st.prepare));
+  }, [healthy]);
+  const commitCollected = useMemo(() => {
+    if (!healthy.length) return 0;
+    return Math.min(...healthy.map((st) => st.commit));
+  }, [healthy]);
   const currentCollected = phase === 'prepare' ? prepareCollected : phase === 'commit' ? commitCollected : 0;
   const remaining = Math.max(0, needed - currentCollected);
   return (
@@ -31,7 +39,7 @@ export default function ExplanationBox(): React.ReactElement {
   <p className="text-slate-700 leading-relaxed text-base">{explanation}</p>
       {phase !== 'pre-prepare' && (
         <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-slate-700 font-mono border border-blue-200">
-          Need 2f + 1 = {needed} matching {phase === 'prepare' ? 'PREPARE' : 'COMMIT'} messages (f = {f}). Collected {currentCollected}/{needed}{remaining > 0 ? ` (need ${remaining} more)` : ' ✓ threshold met'}
+          Need 2f + 1 = {needed} matching {phase === 'prepare' ? 'PREPARE' : 'COMMIT'} messages (counts local vote, f = {f}). Collected {currentCollected}/{needed}{remaining > 0 ? ` (need ${remaining} more)` : ' ✓ threshold met'}
         </div>
       )}
       <div className="mt-3 p-3 bg-slate-100 rounded-lg text-sm text-slate-700 font-mono border border-slate-200">

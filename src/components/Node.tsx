@@ -76,6 +76,19 @@ export default function Node({ node, x, y }: NodeProps) {
           />
         </>
       )}
+      {/* One-off celebration ring when reaching prepared/committed for the first time */}
+      {(status === 'prepared' || status === 'committed') && (
+        <motion.circle
+          key={`celebrate-${status}`}
+          cx={0}
+          cy={0}
+          r={36}
+          className={`fill-transparent ${status === 'committed' ? 'stroke-amber-500/70' : 'stroke-purple-500/70'} stroke-[3px]`}
+          initial={{ r: 36, opacity: 0.9 }}
+          animate={{ r: 74, opacity: 0 }}
+          transition={{ duration: 0.9, ease: 'easeOut' }}
+        />
+      )}
       <text x={0} y={2} textAnchor="middle" className="fill-white font-bold text-base select-none">
         {node.role === 'leader' ? 'Leader' : `N${node.id}`}
       </text>
@@ -99,8 +112,8 @@ export default function Node({ node, x, y }: NodeProps) {
         </foreignObject>
       )}
       {/* Per-node counts: PREP/COM towards 2f+1 */}
-      <foreignObject x={-50} y={70} width={100} height={28}>
-        <div className="w-full text-xs leading-tight text-center flex items-center justify-center gap-1.5">
+      <foreignObject x={-54} y={70} width={108} height={30}>
+        <div className="w-full text-[11px] leading-tight text-center flex items-center justify-center gap-1.5">
           <span className={`rounded-md px-1.5 py-0.5 shadow-sm font-semibold ${prepClass}`}>P {stats?.prepare ?? 0}/{needed}</span>
           <span className={`rounded-md px-1.5 py-0.5 shadow-sm font-semibold ${commClass}`}>C {stats?.commit ?? 0}/{needed}</span>
         </div>

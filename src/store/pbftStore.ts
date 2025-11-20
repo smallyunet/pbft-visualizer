@@ -16,6 +16,7 @@ export type RenderedMessage = Message & { at: number };
 export type PbftState = {
 	// Simulation clock and phase
 	t: number;
+	phaseStart: number; // absolute time when current phase started (keeps global clock monotonic)
 	phase: Phase;
 	playing: boolean;
 	speed: number; // 0.5, 1, 2
@@ -143,6 +144,7 @@ export const usePbftStore = create<PbftState>((set, get) => {
 
 	return {
 		t: 0,
+		phaseStart: 0,
 		phase: initialPhase,
 		playing: false,
 		speed: pref.speed ?? 1,
@@ -183,21 +185,20 @@ export const usePbftStore = create<PbftState>((set, get) => {
 			const scene = sceneOf(p);
 			set({
 				phase: p,
-				t: 0,
-				timeline: [],
+				phaseStart: get().t,
+				// Keep global clock monotonic; reuse timeline so past edges fade smoothly.
 				playing: false,
 				explanation: scene.steps[0]?.narration ?? '',
-				logs: [],
 				phaseAdvanceDueAt: null,
 				nodeStats: [],
-				sceneKey: get().sceneKey + 1,
 			});
 		},
 
 		resetPhase: () => {
 			const { phase } = get();
 			const scene = sceneOf(phase);
-			set({ t: 0, timeline: [], playing: false, explanation: scene.steps[0]?.narration ?? '', logs: [], phaseAdvanceDueAt: null, sceneKey: get().sceneKey + 1, hoveredNodeId: null });
+			const now = get().t;
+			set({ phaseStart: now, t: now, timeline: [], playing: false, explanation: scene.steps[0]?.narration ?? '', logs: [], phaseAdvanceDueAt: null, sceneKey: get().sceneKey + 1, hoveredNodeId: null, nodeStats: [] });
 		},
 
 		// Reset everything to round 1 and initial phase, preserving node fault selections for experimentation
@@ -205,6 +206,7 @@ export const usePbftStore = create<PbftState>((set, get) => {
 			const scene = sceneOf('pre-prepare');
 			set({
 				t: 0,
+				phaseStart: 0,
 				phase: 'pre-prepare',
 				playing: false,
 				timeline: [],
@@ -226,10 +228,11 @@ export const usePbftStore = create<PbftState>((set, get) => {
 			const { phase, value, nextIncrement, round } = get();
 			if (phase === 'pre-prepare') {
 				const ns = sceneOf('prepare');
+				const now = get().t;
 				set((s) => ({
 					phase: 'prepare',
-					t: 0,
-					timeline: [],
+					phaseStart: now,
+					t: now,
 					explanation: ns.steps[0]?.narration ?? '',
 					logs: [...s.logs, { t: s.t, text: '--> Phase: prepare (skipped)' }],
 					phaseAdvanceDueAt: null,
@@ -239,10 +242,11 @@ export const usePbftStore = create<PbftState>((set, get) => {
 			}
 			if (phase === 'prepare') {
 				const ns = sceneOf('commit');
+				const now = get().t;
 				set((s) => ({
 					phase: 'commit',
-					t: 0,
-					timeline: [],
+					phaseStart: now,
+					t: now,
 					explanation: ns.steps[0]?.narration ?? '',
 					logs: [...s.logs, { t: s.t, text: '--> Phase: commit (skipped)' }],
 					phaseAdvanceDueAt: null,
@@ -265,15 +269,17 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		togglePlay: () => set((s) => ({ playing: !s.playing })),
 
 		step: (ms = 300) => {
-			const { t, phase, autoAdvance, phaseAdvanceDueAt, phaseDelayMs, expectedPayload } = get();
+			const { t, phase, autoAdvance, phaseAdvanceDueAt, phaseDelayMs, expectedPayload, phaseStart } = get();
 			const next = t + ms;
 			const scene = sceneOf(phase);
+			const windowStart = t - phaseStart;
+			const windowEnd = next - phaseStart;
 
 			// Gather newly due messages based on timeline clock
 			const due: Message[] = [];
 			scene.steps.forEach((step) => {
 				// Include steps whose atMs falls within (t, next] inclusive of next
-				if (t <= step.atMs && next >= step.atMs) {
+				if (windowStart <= step.atMs && windowEnd >= step.atMs) {
 					due.push(...step.messages);
 					if (step.narration) {
 						set((s) => ({ explanation: step.narration!, logs: [...s.logs, { t: next, text: step.narration! }] }));
@@ -340,7 +346,7 @@ export const usePbftStore = create<PbftState>((set, get) => {
 
 			// Auto-advance to next phase once we've passed the last scheduled step, after an optional pause
 			const lastAt = scene.steps.reduce((max, s) => (s.atMs > max ? s.atMs : max), 0);
-			if (get().playing && autoAdvance && next > lastAt) {
+			if (get().playing && autoAdvance && windowEnd > lastAt) {
 				const np = phase === 'pre-prepare' ? 'prepare' : phase === 'prepare' ? 'commit' : undefined;
 				if (!np) {
 					// End of round (commit complete): update result and schedule next round
@@ -371,12 +377,13 @@ export const usePbftStore = create<PbftState>((set, get) => {
 					const ns = sceneOf(np);
 					set((s) => ({
 						phase: np,
-						t: 0,
-						timeline: [],
+						phaseStart: next,
+						t: next,
+						// Keep timeline so previous phase arrows can fade out smoothly; stats recomputed below.
 						explanation: ns.steps[0]?.narration ?? '',
 						logs: [...s.logs, { t: next, text: `--> Phase: ${np}` }],
 						phaseAdvanceDueAt: null,
-						nodeStats: computeNodeStats({ ...s, timeline: [] }),
+						nodeStats: computeNodeStats({ ...s, timeline: s.timeline, phase: np }),
 					}));
 				}
 			}
@@ -433,7 +440,7 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		},
 
 		startNextRound: () => {
-			const { nextIncrement, round } = get();
+			const { nextIncrement, round, t } = get();
 			const newIncrement = nextIncrement + 1;
 			const newRound = round + 1;
 			const newExpected = `+${newIncrement}`;
@@ -443,13 +450,13 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				nextIncrement: newIncrement,
 				expectedPayload: newExpected,
 				phase: 'pre-prepare',
-				t: 0,
-				timeline: [],
+				phaseStart: t,
+				t,
+				// Keep timeline so last round fades out; new payload prevents stale messages from affecting stats.
 				explanation: scene.steps[0]?.narration ?? '',
 				logs: [...s.logs, { t: s.t, text: `==> Round ${newRound} start. Proposed delta ${newExpected}` }],
 				phaseAdvanceDueAt: null,
 				nodeStats: [],
-				sceneKey: s.sceneKey + 1,
 			}));
 		},
 
@@ -501,14 +508,30 @@ function computeNodeStats(s: Pick<PbftState, 'timeline' | 'expectedPayload' | 'p
 	const needed = 2 * s.f + 1;
 	type Stat = { prepare: number; commit: number; proposed: boolean; status: 'idle' | 'proposed' | 'prepared' | 'committed' };
 	const stats: Stat[] = Array.from({ length: s.n }, () => ({ prepare: 0, commit: 0, proposed: false, status: 'idle' }));
+	// Each node counts its own PREPARE/COMMIT vote once it broadcasts (PBFT counts local vote).
+	const selfPrepare = new Set<number>();
+	const selfCommit = new Set<number>();
+	// Leader originates the value so it is already "proposed" even without a self-addressed PRE-PREPARE.
+	if (stats.length > 0) stats[0].proposed = true;
 	const ok = s.expectedPayload;
 	s.timeline.forEach((m) => {
 		const to = m.to;
 		if (to == null || to < 0 || to >= s.n) return;
 		if (m.kind === 'pre-prepare' && !m.conflicting && (m.payload === ok)) stats[to].proposed = true;
-		if (m.kind === 'prepare' && !m.conflicting && m.payload === ok) stats[to].prepare += 1;
-		if (m.kind === 'commit' && !m.conflicting && m.payload === ok) stats[to].commit += 1;
+		if (m.kind === 'prepare' && !m.conflicting && m.payload === ok) {
+			stats[to].prepare += 1;
+			if (m.from >= 0 && m.from < s.n) {
+				selfPrepare.add(m.from);
+				stats[m.from].proposed = true;
+			}
+		}
+		if (m.kind === 'commit' && !m.conflicting && m.payload === ok) {
+			stats[to].commit += 1;
+			if (m.from >= 0 && m.from < s.n) selfCommit.add(m.from);
+		}
 	});
+	selfPrepare.forEach((id) => { stats[id].prepare += 1; });
+	selfCommit.forEach((id) => { stats[id].commit += 1; });
 	for (let i = 0; i < stats.length; i++) {
 		const st = stats[i];
 		if (s.phase === 'commit') st.status = st.commit >= needed ? 'committed' : st.prepare >= needed ? 'prepared' : st.proposed ? 'proposed' : 'idle';
