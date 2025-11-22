@@ -136,7 +136,7 @@
 /* Panel group header */
 .panel-group {
   /* Softer background, subtle ring instead of heavier shadow for cleaner look */
-  @apply flex items-center gap-2 backdrop-blur-md rounded-xl shadow-md ring-1 px-3 py-2 flex-wrap;
+  @apply flex flex-col items-start gap-3 backdrop-blur-md rounded-xl shadow-md ring-1 px-3 py-2;
   background-color: rgba(255, 255, 255, 0.95);
   --tw-ring-color: rgba(226, 232, 240, 0.5);
   transition: all 0.3s ease;

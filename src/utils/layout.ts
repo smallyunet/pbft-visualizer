@@ -22,7 +22,7 @@ export function pathBetween(a: Point, b: Point, jitter: number = 0): string {
   const nx = -dy / norm; // perpendicular unit vector
   const ny = dx / norm;
   // curvature radius in px with a tiny deterministic jitter to reduce visual overlap among many parallel edges
-  const curve = 48 + jitter;
+  const curve = 60 + jitter;
   const c1x = mx + nx * curve;
   const c1y = my + ny * curve;
   return `M ${a.x} ${a.y} Q ${c1x} ${c1y} ${b.x} ${b.y}`;

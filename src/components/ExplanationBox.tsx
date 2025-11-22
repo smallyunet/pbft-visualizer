@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { usePbftStore } from '../store/pbftStore';
 import type { PbftState } from '../store/pbftStore';
 import { shallow } from 'zustand/shallow';
@@ -36,7 +37,18 @@ export default function ExplanationBox(): React.ReactElement {
     <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg border border-slate-200/50 p-5 transition-all duration-300 hover:shadow-xl">
       <div className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Phase</div>
   <div className="text-2xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{title}</div>
-  <p className="text-slate-700 leading-relaxed text-base">{explanation}</p>
+  <AnimatePresence mode="wait">
+    <motion.p
+      key={explanation}
+      initial={{ opacity: 0, y: 5 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -5 }}
+      transition={{ duration: 0.2 }}
+      className="text-slate-700 leading-relaxed text-base"
+    >
+      {explanation}
+    </motion.p>
+  </AnimatePresence>
       {phase !== 'pre-prepare' && (
         <div className="mt-4 p-3 bg-blue-50 rounded-lg text-sm text-slate-700 font-mono border border-blue-200">
           Need 2f + 1 = {needed} matching {phase === 'prepare' ? 'PREPARE' : 'COMMIT'} messages (counts local vote, f = {f}). Collected {currentCollected}/{needed}{remaining > 0 ? ` (need ${remaining} more)` : ' ✓ threshold met'}

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { usePbftStore } from '../store/pbftStore';
 import type { PbftState } from '../store/pbftStore';
 import { shallow } from 'zustand/shallow';
@@ -30,7 +31,12 @@ export default function ConsensusProgress(): React.ReactElement | null {
       <div className="uppercase tracking-wide text-slate-500 font-semibold text-xs mb-2">Threshold</div>
       <div className="mb-2 text-slate-700 text-sm font-medium">Collected {current} / {needed} {phase === 'prepare' ? 'PREPARE' : 'COMMIT'} messages (need 2f+1)</div>
       <div className="progress-bg w-full h-4 rounded-full overflow-hidden relative">
-        <div className="progress-fill h-4" style={{ width: pct + '%' }} />
+        <motion.div 
+          className="progress-fill h-4" 
+          initial={{ width: 0 }}
+          animate={{ width: pct + '%' }}
+          transition={{ type: "spring", stiffness: 50, damping: 15 }}
+        />
         <div className="absolute inset-0 flex items-center justify-center text-[11px] font-mono text-slate-700/80 select-none">{Math.round(pct)}%</div>
       </div>
     </div>

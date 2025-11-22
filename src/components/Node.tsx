@@ -46,11 +46,11 @@ export default function Node({ node, x, y }: NodeProps) {
     <g transform={`translate(${x}, ${y})`} onMouseEnter={() => { setHover(true); setHoveredNodeId(node.id); }} onMouseLeave={() => { setHover(false); setHoveredNodeId(null); }}>
       <title>{`Node n${node.id} (${node.role}) state=${node.state} status=${status ?? 'idle'} P=${stats?.prepare ?? 0} C=${stats?.commit ?? 0}`}</title>
       <motion.circle
-        r={36}
+        r={42}
         className={`${roleColor(node.role)} ${strokeByState(node.state)} stroke-[4px]`}
         initial={{ scale: 0, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        whileHover={{ scale: 1.08 }}
+        whileHover={{ scale: 1.1 }}
         transition={{ type: 'spring', stiffness: 260, damping: 20 }}
         filter={node.role === 'leader' ? 'url(#leaderGlow)' : undefined}
       />
@@ -59,22 +59,33 @@ export default function Node({ node, x, y }: NodeProps) {
           <motion.circle
             cx={0}
             cy={0}
-            r={36}
+            r={42}
             className="fill-transparent stroke-sky-400/50 stroke-[2px]"
-            initial={{ r: 36, opacity: 0.6 }}
-            animate={{ r: 58, opacity: 0 }}
+            initial={{ r: 42, opacity: 0.6 }}
+            animate={{ r: 68, opacity: 0 }}
             transition={{ duration: 1.5, repeat: Infinity, ease: 'easeOut' }}
           />
           <motion.circle
             cx={0}
             cy={0}
-            r={36}
+            r={42}
             className="fill-transparent stroke-purple-400/50 stroke-[2px]"
-            initial={{ r: 36, opacity: 0.6 }}
-            animate={{ r: 58, opacity: 0 }}
+            initial={{ r: 42, opacity: 0.6 }}
+            animate={{ r: 68, opacity: 0 }}
             transition={{ duration: 1.5, repeat: Infinity, ease: 'easeOut', delay: 0.5 }}
           />
         </>
+      )}
+      {/* Rotating ring for active status (prepared/committed) to show ongoing consensus maintenance */}
+      {(status === 'prepared' || status === 'committed') && (
+        <motion.circle
+          cx={0}
+          cy={0}
+          r={48}
+          className={`fill-transparent ${status === 'committed' ? 'stroke-amber-400/30' : 'stroke-purple-400/30'} stroke-[2px] stroke-dasharray-[6_10]`}
+          animate={{ rotate: 360 }}
+          transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+        />
       )}
       {/* One-off celebration ring when reaching prepared/committed for the first time */}
       {(status === 'prepared' || status === 'committed') && (
@@ -82,21 +93,21 @@ export default function Node({ node, x, y }: NodeProps) {
           key={`celebrate-${status}`}
           cx={0}
           cy={0}
-          r={36}
+          r={42}
           className={`fill-transparent ${status === 'committed' ? 'stroke-amber-500/70' : 'stroke-purple-500/70'} stroke-[3px]`}
-          initial={{ r: 36, opacity: 0.9 }}
-          animate={{ r: 74, opacity: 0 }}
+          initial={{ r: 42, opacity: 0.9 }}
+          animate={{ r: 84, opacity: 0 }}
           transition={{ duration: 0.9, ease: 'easeOut' }}
         />
       )}
-      <text x={0} y={2} textAnchor="middle" className="fill-white font-bold text-base select-none">
+      <text x={0} y={4} textAnchor="middle" className="fill-white font-bold text-lg select-none">
         {node.role === 'leader' ? 'Leader' : `N${node.id}`}
       </text>
-      <text x={0} y={20} textAnchor="middle" className="fill-white text-sm opacity-90 select-none">
+      <text x={0} y={26} textAnchor="middle" className="fill-white text-sm opacity-90 select-none font-medium">
         {node.state === 'faulty' ? 'Faulty' : 'Normal'}
       </text>
       {showBadge && (
-        <foreignObject x={-32} y={46} width={64} height={22}>
+        <foreignObject x={-35} y={52} width={70} height={24}>
           <div className="w-full h-full flex items-center justify-center">
             {/* Animate status transitions for better affordance */}
             <motion.div

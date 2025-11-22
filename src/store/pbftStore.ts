@@ -174,11 +174,11 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		// Rendering preferences (with persisted defaults)
 		showHistory: pref.showHistory ?? false,
 		recentWindowMs: pref.recentWindowMs ?? 1600,
-		layoutScale: pref.layoutScale ?? 1.3,
+		layoutScale: pref.layoutScale ?? 1.25,
 		focusCurrentPhase: pref.focusCurrentPhase ?? true,
 		showLabels: pref.showLabels ?? false,
 		hoveredNodeId: null,
-		fontScale: pref.fontScale ?? 1.0,
+		fontScale: pref.fontScale ?? 1.1,
 		sceneKey: 0,
 
 		setPhase: (p) => {

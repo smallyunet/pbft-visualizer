@@ -43,10 +43,10 @@ export default function App(): React.ReactElement {
 	}, [playing, speed, step]);
 
 
-	const size = { w: 980, h: 680 };
+	const size = { w: 1200, h: 800 };
 	const center = { x: size.w / 2, y: size.h / 2 };
 	// Increase base radial distance to accommodate larger node visuals
-	const positions = useMemo(() => radialPositions(nodes.length, center.x, center.y, Math.round(230 * layoutScale)), [nodes.length, layoutScale]);
+	const positions = useMemo(() => radialPositions(nodes.length, center.x, center.y, Math.round(260 * layoutScale)), [nodes.length, layoutScale]);
 	const visibleTimeline = useMemo(
 		() => {
 			if (showHistory) return timeline;
@@ -84,8 +84,8 @@ export default function App(): React.ReactElement {
 
 
 						<main className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px] items-start">
-							<section className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl ring-1 ring-white/60 p-4">
-								<svg viewBox={`0 0 ${size.w} ${size.h}`} className="w-full h-[640px]">
+							<section className="bg-white/90 backdrop-blur-sm rounded-3xl shadow-xl ring-1 ring-white/60 p-4 overflow-hidden">
+								<svg viewBox={`0 0 ${size.w} ${size.h}`} className="w-full h-auto max-h-[80vh]">
 												{/* Reusable arrowhead marker */}
 							<defs>
 								<marker id="arrowhead" markerWidth="13" markerHeight="9" refX="13" refY="4.5" orient="auto">
