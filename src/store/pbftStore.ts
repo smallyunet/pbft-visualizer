@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { Phase, Message, Scene } from '../data/phases';
-import { prePrepareScene, prepareScene, commitScene, NODES, F } from '../data/phases';
+import { prePrepareScene, prepareScene, commitScene, requestScene, replyScene, NODES, F } from '../data/phases';
 
 export type NodeUi = {
 	id: number;
@@ -43,6 +43,7 @@ export type PbftState = {
 	logs: LogEntry[];
 	timeline: RenderedMessage[];
 	nodes: NodeUi[];
+	client: { x: number; y: number; active: boolean };
 
 	// Parameters (n = 3f + 1)
 	n: number;
@@ -85,9 +86,11 @@ export type PbftState = {
 };
 
 function sceneOf(p: Phase): Scene {
+	if (p === 'request') return requestScene;
 	if (p === 'pre-prepare') return prePrepareScene;
 	if (p === 'prepare') return prepareScene;
-	return commitScene;
+	if (p === 'commit') return commitScene;
+	return replyScene;
 }
 
 // Persist selected UI preferences to localStorage for better UX across reloads
@@ -138,7 +141,7 @@ function savePrefs(s: Pick<PbftState, keyof ViewPrefs>): void {
 }
 
 export const usePbftStore = create<PbftState>((set, get) => {
-	const initialPhase: Phase = 'pre-prepare';
+	const initialPhase: Phase = 'request';
 	const initScene = sceneOf(initialPhase);
 	const pref = loadPrefs();
 
@@ -167,18 +170,19 @@ export const usePbftStore = create<PbftState>((set, get) => {
 			role: i === 0 ? 'leader' : 'replica',
 			state: 'normal',
 		})),
+		client: { x: 100, y: 100, active: true },
 
 		n: NODES,
 		f: F,
 
 		// Rendering preferences (with persisted defaults)
 		showHistory: pref.showHistory ?? false,
-		recentWindowMs: pref.recentWindowMs ?? 1600,
-		layoutScale: pref.layoutScale ?? 1.25,
+		recentWindowMs: pref.recentWindowMs ?? 1200,
+		layoutScale: pref.layoutScale ?? 1.4,
 		focusCurrentPhase: pref.focusCurrentPhase ?? true,
 		showLabels: pref.showLabels ?? false,
 		hoveredNodeId: null,
-		fontScale: pref.fontScale ?? 1.1,
+		fontScale: pref.fontScale ?? 1.2,
 		sceneKey: 0,
 
 		setPhase: (p) => {
@@ -203,11 +207,11 @@ export const usePbftStore = create<PbftState>((set, get) => {
 
 		// Reset everything to round 1 and initial phase, preserving node fault selections for experimentation
 		resetAll: () => {
-			const scene = sceneOf('pre-prepare');
+			const scene = sceneOf('request');
 			set({
 				t: 0,
 				phaseStart: 0,
-				phase: 'pre-prepare',
+				phase: 'request',
 				playing: false,
 				timeline: [],
 				logs: [],
@@ -226,6 +230,20 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		// Immediately move to the next phase (or finish round when already in commit)
 		skipPhase: () => {
 			const { phase, value, nextIncrement, round } = get();
+			if (phase === 'request') {
+				const ns = sceneOf('pre-prepare');
+				const now = get().t;
+				set((s) => ({
+					phase: 'pre-prepare',
+					phaseStart: now,
+					t: now,
+					explanation: ns.steps[0]?.narration ?? '',
+					logs: [...s.logs, { t: s.t, text: '--> Phase: pre-prepare (skipped)' }],
+					phaseAdvanceDueAt: null,
+					nodeStats: [],
+				}));
+				return;
+			}
 			if (phase === 'pre-prepare') {
 				const ns = sceneOf('prepare');
 				const now = get().t;
@@ -254,7 +272,21 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				}));
 				return;
 			}
-			// phase === 'commit': end the round immediately
+			if (phase === 'commit') {
+				const ns = sceneOf('reply');
+				const now = get().t;
+				set((s) => ({
+					phase: 'reply',
+					phaseStart: now,
+					t: now,
+					explanation: ns.steps[0]?.narration ?? '',
+					logs: [...s.logs, { t: s.t, text: '--> Phase: reply (skipped)' }],
+					phaseAdvanceDueAt: null,
+					nodeStats: [],
+				}));
+				return;
+			}
+			// phase === 'reply': end the round immediately
 			const newValue = value + nextIncrement;
 			set((s) => ({
 				value: newValue,
@@ -291,9 +323,9 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				// If a node is faulty, mark its outgoing messages as conflicting to visualize misbehavior
 				const nodes = get().nodes;
 				const annotated = due.map((m) => {
-					const fromNode = nodes[m.from];
+					const fromNode = m.from >= 0 ? nodes[m.from] : undefined;
 					const basePayload = m.payload === 'v' ? expectedPayload : m.payload;
-					if (fromNode.state === 'faulty') {
+					if (fromNode?.state === 'faulty') {
 						// Different payload to illustrate Byzantine divergence.
 						return { ...m, conflicting: true, payload: `${basePayload}*`, at: next } as RenderedMessage;
 					}
@@ -347,9 +379,9 @@ export const usePbftStore = create<PbftState>((set, get) => {
 			// Auto-advance to next phase once we've passed the last scheduled step, after an optional pause
 			const lastAt = scene.steps.reduce((max, s) => (s.atMs > max ? s.atMs : max), 0);
 			if (get().playing && autoAdvance && windowEnd > lastAt) {
-				const np = phase === 'pre-prepare' ? 'prepare' : phase === 'prepare' ? 'commit' : undefined;
+				const np = phase === 'request' ? 'pre-prepare' : phase === 'pre-prepare' ? 'prepare' : phase === 'prepare' ? 'commit' : phase === 'commit' ? 'reply' : undefined;
 				if (!np) {
-					// End of round (commit complete): update result and schedule next round
+					// End of round (reply complete): update result and schedule next round
 					if (phaseAdvanceDueAt == null) {
 						const { value, nextIncrement, round } = get();
 						const newValue = value + nextIncrement;
@@ -444,12 +476,12 @@ export const usePbftStore = create<PbftState>((set, get) => {
 			const newIncrement = nextIncrement + 1;
 			const newRound = round + 1;
 			const newExpected = `+${newIncrement}`;
-			const scene = sceneOf('pre-prepare');
+			const scene = sceneOf('request');
 			set((s) => ({
 				round: newRound,
 				nextIncrement: newIncrement,
 				expectedPayload: newExpected,
-				phase: 'pre-prepare',
+				phase: 'request',
 				phaseStart: t,
 				t,
 				// Keep timeline so last round fades out; new payload prevents stale messages from affecting stats.
@@ -494,9 +526,11 @@ export const usePbftStore = create<PbftState>((set, get) => {
 });
 
 function label(k: Message['kind']): string {
+	if (k === 'request') return '[REQUEST]';
 	if (k === 'pre-prepare') return '[PRE-PREPARE]';
 	if (k === 'prepare') return '[PREPARE]';
-	return '[COMMIT]';
+	if (k === 'commit') return '[COMMIT]';
+	return '[REPLY]';
 }
 
 function desc(m: Message): string {
@@ -534,7 +568,8 @@ function computeNodeStats(s: Pick<PbftState, 'timeline' | 'expectedPayload' | 'p
 	selfCommit.forEach((id) => { stats[id].commit += 1; });
 	for (let i = 0; i < stats.length; i++) {
 		const st = stats[i];
-		if (s.phase === 'commit') st.status = st.commit >= needed ? 'committed' : st.prepare >= needed ? 'prepared' : st.proposed ? 'proposed' : 'idle';
+		if (s.phase === 'reply') st.status = 'committed';
+		else if (s.phase === 'commit') st.status = st.commit >= needed ? 'committed' : st.prepare >= needed ? 'prepared' : st.proposed ? 'proposed' : 'idle';
 		else if (s.phase === 'prepare') st.status = st.prepare >= needed ? 'prepared' : st.proposed ? 'proposed' : 'idle';
 		else st.status = st.proposed ? 'proposed' : 'idle';
 	}

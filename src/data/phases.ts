@@ -1,8 +1,8 @@
 // Declarative scene description and constants for PBFT phases.
 
-export type Phase = 'pre-prepare' | 'prepare' | 'commit';
+export type Phase = 'request' | 'pre-prepare' | 'prepare' | 'commit' | 'reply';
 
-export type MessageKind = 'pre-prepare' | 'prepare' | 'commit';
+export type MessageKind = 'request' | 'pre-prepare' | 'prepare' | 'commit' | 'reply';
 
 export type Message = {
   id: string;
@@ -31,6 +31,25 @@ export const F = 1; // (n - 1) / 3
 // Spacing between steps (ms). Aligned with SVG animation duration so one step's
 // arrows finish drawing before the next one starts.
 export const STEP_MS = 1200;
+
+// Request phase script (Client -> Leader)
+export const requestScene: Scene = {
+  phase: 'request',
+  steps: [
+    {
+      atMs: 0,
+      narration: 'Client sends request op to Leader.',
+      messages: [
+        { id: 'req-1', from: -1, to: 0, kind: 'request', payload: 'op' },
+      ],
+    },
+    {
+      atMs: STEP_MS,
+      narration: 'Leader receives request and assigns sequence number.',
+      messages: [],
+    },
+  ],
+};
 
 // Pre-prepare phase script (leader proposes a value)
 export const prePrepareScene: Scene = {
@@ -149,6 +168,28 @@ export const commitScene: Scene = {
     {
       atMs: STEP_MS * 5,
       narration: 'Consensus achieved for value v. Protocol round complete.',
+      messages: [],
+    },
+  ],
+};
+
+// Reply phase script (Nodes -> Client)
+export const replyScene: Scene = {
+  phase: 'reply',
+  steps: [
+    {
+      atMs: 0,
+      narration: 'Nodes execute operation and reply to Client.',
+      messages: [
+        { id: 'rep-0', from: 0, to: -1, kind: 'reply', payload: 'res' },
+        { id: 'rep-1', from: 1, to: -1, kind: 'reply', payload: 'res' },
+        { id: 'rep-2', from: 2, to: -1, kind: 'reply', payload: 'res' },
+        { id: 'rep-3', from: 3, to: -1, kind: 'reply', payload: 'res' },
+      ],
+    },
+    {
+      atMs: STEP_MS,
+      narration: 'Client waits for f+1 replies with same result.',
       messages: [],
     },
   ],
