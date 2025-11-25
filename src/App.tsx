@@ -6,6 +6,9 @@ import { radialPositions, clientPosition } from './utils/layout';
 import Node from './components/Node';
 import ClientNode from './components/ClientNode';
 import MessageArrow from './components/MessageArrow';
+import CanvasStage from './components/CanvasStage';
+import PixiNode from './components/PixiNode';
+import PixiMessage from './components/PixiMessage';
 import ControlPanel from './components/ControlPanel';
 import ExplanationBox from './components/ExplanationBox';
 import LogPanel from './components/LogPanel';
@@ -15,7 +18,7 @@ import { STEP_MS } from './data/phases';
 
 
 export default function App(): React.ReactElement {
-	const { nodes, client, timeline, playing, step, speed, showHistory, recentWindowMs, t, layoutScale, fontScale, sceneKey } = usePbftStore(
+	const { nodes, client, timeline, playing, step, speed, showHistory, recentWindowMs, t, layoutScale, fontScale, sceneKey, hoveredNodeId, setHoveredNodeId } = usePbftStore(
 		(s: PbftState) => ({
 			nodes: s.nodes,
 			client: s.client,
@@ -29,6 +32,8 @@ export default function App(): React.ReactElement {
 			layoutScale: s.layoutScale,
 			fontScale: s.fontScale,
 			sceneKey: s.sceneKey,
+			hoveredNodeId: s.hoveredNodeId,
+			setHoveredNodeId: s.setHoveredNodeId,
 		}),
 		shallow
 	);
@@ -70,81 +75,48 @@ export default function App(): React.ReactElement {
 	return (
 		<div className="min-h-screen bg-slate-50 overflow-hidden font-sans text-slate-900" style={{ fontSize: `${fontScale * 16}px` }}>
 			{/* Main Canvas Area - Full Screen */}
-			<div className="absolute inset-0 z-0 flex items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50/30 to-purple-50/20">
-				<svg viewBox={`0 0 ${size.w} ${size.h}`} className="w-full h-full max-w-[100vw] max-h-[100vh]" preserveAspectRatio="xMidYMid meet">
-					{/* Reusable arrowhead marker */}
-					<defs>
-						<marker id="arrowhead" markerWidth="13" markerHeight="9" refX="13" refY="4.5" orient="auto">
-							<polygon points="0 0, 13 4.5, 0 9" className="fill-slate-700" />
-						</marker>
-						{/* Subtle glow for leader node to improve salience */}
-						<filter id="leaderGlow" x="-50%" y="-50%" width="200%" height="200%">
-							<feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur" />
-							<feMerge>
-								<feMergeNode in="blur" />
-								<feMergeNode in="SourceGraphic" />
-							</feMerge>
-						</filter>
-						{/* Edge glow for emphasized current-phase edges */}
-						<filter id="edgeGlow" x="-50%" y="-50%" width="200%" height="200%">
-							<feGaussianBlur stdDeviation="1.2" result="glow" />
-							<feMerge>
-								<feMergeNode in="glow" />
-								<feMergeNode in="SourceGraphic" />
-							</feMerge>
-						</filter>
-						{/* Glow for conflicting (Byzantine) messages for stronger visual separation */}
-						<filter id="conflictGlow" x="-60%" y="-60%" width="220%" height="220%">
-							<feGaussianBlur in="SourceAlpha" stdDeviation="3" result="cBlur" />
-							<feColorMatrix in="cBlur" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.7 0" result="redGlow" />
-							<feMerge>
-								<feMergeNode in="redGlow" />
-								<feMergeNode in="SourceGraphic" />
-							</feMerge>
-						</filter>
-						{/* Radial background gradient definition */}
-						<radialGradient id="vizRadial" cx="50%" cy="50%" r="70%">
-							<stop offset="0%" stopColor="#f8fafc" />
-							<stop offset="65%" stopColor="#eef2f6" />
-							<stop offset="100%" stopColor="#e2e8f0" />
-						</radialGradient>
-					</defs>
+			<div className="absolute inset-0 z-0 flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+				<CanvasStage width={size.w} height={size.h} className="w-full h-full max-w-[100vw] max-h-[100vh]">
+					{/* Edges/messages */}
+					{visibleTimeline.map((m) => {
+						const age = t - m.at; // ms
+						// Only show active messages or recent ones
+						if (age > 2000 && !showHistory) return null;
 
-					{/* Background shape and subtle phase banner */}
-					<rect x={0} y={0} width={size.w} height={size.h} className="fill-transparent" />
+						return (
+							<PixiMessage
+								key={m.id}
+								from={getPos(m.from)}
+								to={getPos(m.to)}
+								kind={m.kind}
+								conflicting={m.conflicting}
+								duration={Math.max(0.4, Math.min(1.2, (STEP_MS / 1000) / speed * 0.9))}
+							/>
+						);
+					})}
 
-					{/* Edges/messages (remount on sceneKey change) */}
-					<g key={`edges-${sceneKey}`}>
-						{visibleTimeline.map((m) => {
-							const age = t - m.at; // ms
-							const alpha = showHistory ? 1 : Math.max(0, 1 - age / recentWindowMs);
-							return (
-								<MessageArrow
-									key={m.id}
-									id={m.id}
-									from={getPos(m.from)}
-									to={getPos(m.to)}
-									fromId={m.from === -1 ? undefined : m.from}
-									toId={m.to === -1 ? undefined : m.to}
-									kind={m.kind}
-									conflicting={m.conflicting}
-									payload={m.payload}
-									duration={Math.max(0.4, Math.min(1.2, (STEP_MS / 1000) / speed * 0.9))}
-									alpha={alpha}
-								/>
-							);
-						})}
-					</g>
-
-					{/* Nodes on top of arrows. sceneKey forces remount on hard resets to purge lingering animation artifacts. */}
+					{/* Nodes */}
 					{nodes.map((n, i) => (
-						<Node key={`${sceneKey}-${n.id}`} node={n} x={positions[i].x} y={positions[i].y} />
+						<PixiNode
+							key={`${sceneKey}-${n.id}`}
+							node={n}
+							x={positions[i].x}
+							y={positions[i].y}
+							hovered={hoveredNodeId === n.id}
+							onHover={setHoveredNodeId}
+						/>
 					))}
 
 					{/* Client Node */}
-					<ClientNode x={clientPos.x} y={clientPos.y} active={client.active} />
-
-				</svg>
+					<PixiNode
+						key="client"
+						node={{ id: -1, role: 'replica', state: 'normal' }} // Mock node for client
+						x={clientPos.x}
+						y={clientPos.y}
+						hovered={false}
+						onHover={() => { }}
+					/>
+				</CanvasStage>
 			</div>
 
 			{/* Title Overlay (Top Left) */}

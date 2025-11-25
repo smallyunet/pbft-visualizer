@@ -96,8 +96,9 @@ export default function MessageArrow({ id, from, to, fromId, toId, kind, conflic
         d={d}
         className={`${strokeClass} ${conflicting ? 'stroke-[4px] stroke-dasharray-[4_4]' : 'stroke-[2px]'} fill-none`}
         initial={{ pathLength: 0, opacity: 0 }}
-        animate={{ pathLength: 1, opacity: hover ? 0.6 : 0.15 }}
+        animate={{ pathLength: 1, opacity: hover ? 0.8 : 0.4 }}
         transition={{ duration, ease: "linear" }}
+        markerEnd="url(#arrowhead)"
       />
 
       {/* Traveling Icon */}
@@ -108,7 +109,7 @@ export default function MessageArrow({ id, from, to, fromId, toId, kind, conflic
         style={{ offsetPath: `path("${d}")`, opacity: finalOpacity }}
         className={colorClass}
       >
-        <g transform="scale(1.2) translate(-12, -12)">
+        <g transform="scale(1.5) translate(-12, -12)">
           {Icons[kind]}
         </g>
       </motion.g>
