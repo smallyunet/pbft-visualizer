@@ -1,15 +1,14 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { Graphics, Container } from '@pixi/react';
-import { useTick } from '@pixi/react';
-import * as PIXI from 'pixi.js';
+import React, { useMemo, useRef, useState } from 'react';
+import { Graphics, Container, useTick } from '@pixi/react';
+import { usePbftStore } from '../store/pbftStore';
 
 interface PixiMessageProps {
     from: { x: number; y: number };
     to: { x: number; y: number };
     kind: 'request' | 'pre-prepare' | 'prepare' | 'commit' | 'reply';
     conflicting?: boolean;
-    duration?: number;
-    onComplete?: () => void;
+    startAt: number;
+    duration: number;
 }
 
 const COLORS = {
@@ -20,9 +19,12 @@ const COLORS = {
     'reply': 0x64748b, // slate-500
 };
 
-export default function PixiMessage({ from, to, kind, conflicting, duration = 1.0, onComplete }: PixiMessageProps) {
-    const [progress, setProgress] = useState(0);
-    const startTime = useRef(Date.now());
+export default function PixiMessage({ from, to, kind, conflicting, startAt, duration }: PixiMessageProps) {
+    const [visible, setVisible] = useState(false);
+
+    // Mutable refs for graphics to update them without re-rendering React component
+    const pathRef = useRef<any>(null);
+    const particleRef = useRef<any>(null);
 
     // Calculate quadratic bezier control point for curve
     const controlPoint = useMemo(() => {
@@ -43,53 +45,53 @@ export default function PixiMessage({ from, to, kind, conflicting, duration = 1.
         };
     }, [from, to]);
 
-    useTick((delta) => {
-        const now = Date.now();
-        const elapsed = (now - startTime.current) / 1000;
-        const p = Math.min(elapsed / duration, 1);
+    // Animation loop: runs every frame (~60fps)
+    useTick(() => {
+        const t = usePbftStore.getState().t;
+        const age = t - startAt;
+        const progress = age / (duration * 1000);
 
-        setProgress(p);
-
-        if (p >= 1 && onComplete) {
-            // onComplete(); // In a real app we might trigger something here
+        // Visibility check
+        if (progress < 0 || progress > 1) {
+            if (pathRef.current) pathRef.current.visible = false;
+            if (particleRef.current) particleRef.current.visible = false;
+            return;
         }
-    });
 
-    const drawPath = useMemo(() => {
-        return (g: any) => {
-            g.clear();
-            g.lineStyle(1, conflicting ? 0xff0000 : 0xcbd5e1, 0.15); // Faint trail
-            g.moveTo(from.x, from.y);
-            g.quadraticCurveTo(controlPoint.x, controlPoint.y, to.x, to.y);
-        };
-    }, [from, to, controlPoint, conflicting]);
+        if (pathRef.current) {
+            pathRef.current.visible = true;
+            pathRef.current.clear();
+            pathRef.current.lineStyle(2, conflicting ? 0xff0000 : 0xcbd5e1, 0.4);
+            pathRef.current.moveTo(from.x, from.y);
+            pathRef.current.quadraticCurveTo(controlPoint.x, controlPoint.y, to.x, to.y);
+        }
 
-    const drawParticle = useMemo(() => {
-        return (g: any) => {
-            g.clear();
+        if (particleRef.current) {
+            particleRef.current.visible = true;
+            particleRef.current.clear();
 
             // Calculate current position on bezier curve
-            const t = progress;
+            const t = Math.max(0, Math.min(1, progress));
             const mt = 1 - t;
             const x = mt * mt * from.x + 2 * mt * t * controlPoint.x + t * t * to.x;
             const y = mt * mt * from.y + 2 * mt * t * controlPoint.y + t * t * to.y;
 
-            // Glow (reduced intensity)
-            g.beginFill(COLORS[kind], 0.2);
-            g.drawCircle(x, y, 6);
-            g.endFill();
+            // Glow
+            particleRef.current.beginFill(COLORS[kind], 0.4);
+            particleRef.current.drawCircle(x, y, 8);
+            particleRef.current.endFill();
 
-            // Core (slightly smaller)
-            g.beginFill(COLORS[kind], 0.9);
-            g.drawCircle(x, y, 3);
-            g.endFill();
-        };
-    }, [from, to, controlPoint, progress, kind]);
+            // Core
+            particleRef.current.beginFill(COLORS[kind], 1.0);
+            particleRef.current.drawCircle(x, y, 4);
+            particleRef.current.endFill();
+        }
+    });
 
     return (
         <Container>
-            <Graphics draw={drawPath} />
-            <Graphics draw={drawParticle} />
+            <Graphics ref={pathRef} />
+            <Graphics ref={particleRef} />
         </Container>
     );
 }

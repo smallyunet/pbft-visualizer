@@ -15,7 +15,7 @@ export default function PixiNode({ node, x, y, hovered, onHover }: PixiNodeProps
     const isLeader = node.role === 'leader';
     const isFaulty = node.state === 'faulty';
 
-    const radius = 30;
+    const radius = 35;
 
     const drawNode = useMemo(() => {
         return (g: any) => {
@@ -23,8 +23,8 @@ export default function PixiNode({ node, x, y, hovered, onHover }: PixiNodeProps
 
             // Glow effect if hovered or leader
             if (hovered || isLeader) {
-                g.beginFill(isFaulty ? 0xff0000 : isLeader ? 0x10b981 : 0x3b82f6, 0.15);
-                g.drawCircle(0, 0, radius + 8);
+                g.beginFill(isFaulty ? 0xff0000 : isLeader ? 0x10b981 : 0x3b82f6, 0.3);
+                g.drawCircle(0, 0, radius + 12);
                 g.endFill();
             }
 
@@ -38,7 +38,7 @@ export default function PixiNode({ node, x, y, hovered, onHover }: PixiNodeProps
 
     const textStyle = useMemo(() => new TextStyle({
         fill: '#ffffff',
-        fontSize: 14,
+        fontSize: 16,
         fontWeight: 'bold',
         align: 'center',
     }), []);
@@ -55,8 +55,8 @@ export default function PixiNode({ node, x, y, hovered, onHover }: PixiNodeProps
             x={x}
             y={y}
             eventMode="static"
-            pointerenter={() => onHover(node.id)}
-            pointerleave={() => onHover(null)}
+            onpointerenter={() => onHover(node.id)}
+            onpointerleave={() => onHover(null)}
             cursor="pointer"
         >
             <Graphics draw={drawNode} />

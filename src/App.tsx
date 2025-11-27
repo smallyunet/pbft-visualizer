@@ -18,7 +18,7 @@ import { STEP_MS } from './data/phases';
 
 
 export default function App(): React.ReactElement {
-	const { nodes, client, timeline, playing, step, speed, showHistory, recentWindowMs, t, layoutScale, fontScale, sceneKey, hoveredNodeId, setHoveredNodeId } = usePbftStore(
+	const { nodes, client, timeline, playing, step, speed, showHistory, recentWindowMs, layoutScale, fontScale, sceneKey, hoveredNodeId, setHoveredNodeId } = usePbftStore(
 		(s: PbftState) => ({
 			nodes: s.nodes,
 			client: s.client,
@@ -28,7 +28,6 @@ export default function App(): React.ReactElement {
 			speed: s.speed,
 			showHistory: s.showHistory,
 			recentWindowMs: s.recentWindowMs,
-			t: s.t,
 			layoutScale: s.layoutScale,
 			fontScale: s.fontScale,
 			sceneKey: s.sceneKey,
@@ -43,7 +42,7 @@ export default function App(): React.ReactElement {
 	// Timer loop: advance simulated clock faster when speed is higher.
 	useEffect(() => {
 		if (!playing) return;
-		const tickMs = 200; // real time interval
+		const tickMs = 16; // ~60fps for smooth animation
 		const id = setInterval(() => step(tickMs * speed), tickMs);
 		return () => clearInterval(id);
 	}, [playing, speed, step]);
@@ -53,18 +52,9 @@ export default function App(): React.ReactElement {
 	const center = { x: size.w / 2, y: size.h / 2 };
 
 	// Layout Calculations
-	const r = Math.round(340 * layoutScale);
+	const r = Math.round(280 * layoutScale);
 	const positions = useMemo(() => radialPositions(nodes.length, center.x, center.y, r), [nodes.length, center.x, center.y, r]);
 	const clientPos = useMemo(() => clientPosition(center.x, center.y, r), [center.x, center.y, r]);
-
-	const visibleTimeline = useMemo(
-		() => {
-			if (showHistory) return timeline;
-			// Only show messages already "occurred" (m.at <= t) and still within recent window.
-			return timeline.filter((m: RenderedMessage) => m.at <= t && (t - m.at) <= recentWindowMs);
-		},
-		[timeline, showHistory, t, recentWindowMs]
-	);
 
 	// Helper to get position for a node index (-1 is client)
 	const getPos = (id: number) => {
@@ -78,10 +68,13 @@ export default function App(): React.ReactElement {
 			<div className="absolute inset-0 z-0 flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
 				<CanvasStage width={size.w} height={size.h} className="w-full h-full max-w-[100vw] max-h-[100vh]">
 					{/* Edges/messages */}
-					{visibleTimeline.map((m) => {
-						const age = t - m.at; // ms
+					{timeline.map((m) => {
 						// Only show active messages or recent ones
-						if (age > 2000 && !showHistory) return null;
+						// We rely on PixiMessage to hide itself if it's not in the window, 
+						// but we can filter out very old ones here if needed. 
+						// Since timeline is pruned by store, we can just map it.
+
+						const durationSec = Math.max(0.4, Math.min(1.2, (STEP_MS / 1000) / speed * 0.9));
 
 						return (
 							<PixiMessage
@@ -90,7 +83,8 @@ export default function App(): React.ReactElement {
 								to={getPos(m.to)}
 								kind={m.kind}
 								conflicting={m.conflicting}
-								duration={Math.max(0.4, Math.min(1.2, (STEP_MS / 1000) / speed * 0.9))}
+								startAt={m.at}
+								duration={durationSec}
 							/>
 						);
 					})}
