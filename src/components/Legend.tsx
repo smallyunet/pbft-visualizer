@@ -2,9 +2,9 @@ import React from 'react';
 
 export default function Legend() {
   return (
-    <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg border border-slate-200/50 p-4 text-sm transition-all duration-300 hover:shadow-xl">
+    <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg border border-slate-200/50 p-4 text-xs sm:text-sm transition-all duration-300 hover:shadow-xl animate-slide-in-right">
       <div className="uppercase tracking-wide text-slate-500 font-semibold text-xs mb-3">Legend</div>
-      <ul className="space-y-3">
+      <ul className="space-y-2.5">
         {/* Message Types */}
         <li className="flex items-center gap-3">
           <div className="w-8 flex justify-center text-slate-500">

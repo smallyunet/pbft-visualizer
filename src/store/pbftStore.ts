@@ -74,9 +74,14 @@ export type PbftState = {
 	setShowLabels: (on: boolean) => void;
 	hoveredNodeId: number | null; // globally hovered node to highlight incident edges
 	setHoveredNodeId: (id: number | null) => void;
+	hoveredMessage: RenderedMessage | null;
+	setHoveredMessage: (m: RenderedMessage | null) => void;
 	// Global font scale (affects rem-based sizes via root font size)
 	fontScale: number;
 	setFontScale: (s: number) => void;
+	// View mode: radial (default), linear (horizontal), vertical (stack), or hierarchy (tree)
+	viewMode: 'radial' | 'linear' | 'vertical' | 'hierarchy';
+	setViewMode: (m: 'radial' | 'linear' | 'vertical' | 'hierarchy') => void;
 	// View preference utilities
 	resetViewPrefs: () => void;
 	// Key to force-remount scene layers (edges/nodes) on hard resets to avoid lingering SVGs
@@ -104,6 +109,7 @@ type ViewPrefs = {
 	speed: number;
 	autoAdvance: boolean;
 	phaseDelayMs: number;
+	viewMode: 'radial' | 'linear' | 'vertical' | 'hierarchy';
 };
 
 const PERSIST_KEY = 'pbft:viewPrefs:v1';
@@ -133,6 +139,7 @@ function savePrefs(s: Pick<PbftState, keyof ViewPrefs>): void {
 			speed: s.speed,
 			autoAdvance: s.autoAdvance,
 			phaseDelayMs: s.phaseDelayMs,
+			viewMode: s.viewMode,
 		};
 		window.localStorage.setItem(PERSIST_KEY, JSON.stringify(payload));
 	} catch {
@@ -182,7 +189,9 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		focusCurrentPhase: pref.focusCurrentPhase ?? true,
 		showLabels: pref.showLabels ?? false,
 		hoveredNodeId: null,
+		hoveredMessage: null,
 		fontScale: pref.fontScale ?? 1.2,
+		viewMode: pref.viewMode ?? 'radial',
 		sceneKey: 0,
 
 		setPhase: (p) => {
@@ -451,8 +460,13 @@ export const usePbftStore = create<PbftState>((set, get) => {
 			savePrefs(get());
 		},
 		setHoveredNodeId: (id) => set({ hoveredNodeId: id }),
+		setHoveredMessage: (m) => set({ hoveredMessage: m }),
 		setFontScale: (fs) => {
 			set({ fontScale: Math.max(0.8, Math.min(1.6, fs)) });
+			savePrefs(get());
+		},
+		setViewMode: (m) => {
+			set({ viewMode: m });
 			savePrefs(get());
 		},
 
@@ -467,6 +481,7 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				speed: 1,
 				autoAdvance: true,
 				phaseDelayMs: 2000,
+				viewMode: 'radial',
 			});
 			savePrefs(get());
 		},

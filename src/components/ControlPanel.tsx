@@ -7,7 +7,7 @@ import { shallow } from 'zustand/shallow';
 export default function ControlPanel(): React.ReactElement {
   const [expanded, setExpanded] = useState(false);
 
-  const { phase, setPhase, resetPhase, resetAll, skipPhase, playing, togglePlay, step, speed, setSpeed, nodes, toggleFaulty, n, f, autoAdvance, setAutoAdvance, phaseDelayMs, setPhaseDelay, round, value, showHistory, setShowHistory, recentWindowMs, setRecentWindowMs, layoutScale, setLayoutScale, focusCurrentPhase, setFocusCurrentPhase, showLabels, setShowLabels, fontScale, setFontScale, resetViewPrefs } = usePbftStore(
+  const { phase, setPhase, resetPhase, resetAll, skipPhase, playing, togglePlay, step, speed, setSpeed, nodes, toggleFaulty, n, f, autoAdvance, setAutoAdvance, phaseDelayMs, setPhaseDelay, round, value, showHistory, setShowHistory, recentWindowMs, setRecentWindowMs, layoutScale, setLayoutScale, focusCurrentPhase, setFocusCurrentPhase, showLabels, setShowLabels, fontScale, setFontScale, resetViewPrefs, viewMode, setViewMode } = usePbftStore(
     (s) => ({
       phase: s.phase,
       setPhase: s.setPhase,
@@ -42,6 +42,8 @@ export default function ControlPanel(): React.ReactElement {
       fontScale: s.fontScale,
       setFontScale: s.setFontScale,
       resetViewPrefs: s.resetViewPrefs,
+      viewMode: s.viewMode,
+      setViewMode: s.setViewMode,
     }),
     shallow
   );
@@ -60,49 +62,49 @@ export default function ControlPanel(): React.ReactElement {
           >
             <motion.button
               whileTap={{ scale: 0.95 }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${playing ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200'}`}
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 ${playing ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200'}`}
               onClick={() => togglePlay()}
             >
               {playing ? (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="14" height="14" className="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="10" y1="4" x2="10" y2="20"></line>
                   <line x1="14" y1="4" x2="14" y2="20"></line>
                 </svg>
               ) : (
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+                <svg width="14" height="14" className="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="currentColor" stroke="none">
                   <polygon points="5 3 19 12 5 21 5 3"></polygon>
                 </svg>
               )}
-              {playing ? 'Pause' : 'Play'}
+              <span className="hidden sm:inline">{playing ? 'Pause' : 'Play'}</span>
             </motion.button>
 
             <motion.button
               whileTap={{ scale: 0.95 }}
-              className="p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-all duration-200"
               onClick={() => step(600)}
               title="Step Forward"
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="16" height="16" className="sm:w-[18px] sm:h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="5 4 15 12 5 20 5 4"></polygon>
                 <line x1="19" y1="5" x2="19" y2="19"></line>
               </svg>
             </motion.button>
 
-            <div className="h-5 w-px bg-slate-200 mx-1"></div>
+            <div className="h-4 sm:h-5 w-px bg-slate-200 mx-0.5 sm:mx-1"></div>
 
             <div className="flex flex-col leading-none">
-              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Round</span>
-              <span className="text-sm font-mono font-bold text-slate-700">{round}</span>
+              <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">Round</span>
+              <span className="text-xs sm:text-sm font-mono font-bold text-slate-700">{round}</span>
             </div>
 
-            <div className="h-5 w-px bg-slate-200 mx-1"></div>
+            <div className="h-4 sm:h-5 w-px bg-slate-200 mx-0.5 sm:mx-1"></div>
 
             <motion.button
               whileTap={{ scale: 0.95 }}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-colors text-sm font-medium"
+              className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-all duration-200 text-xs sm:text-sm font-medium"
               onClick={() => setExpanded(true)}
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" className="sm:w-4 sm:h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <line x1="4" y1="21" x2="4" y2="14"></line>
                 <line x1="4" y1="10" x2="4" y2="3"></line>
                 <line x1="12" y1="21" x2="12" y2="12"></line>
@@ -113,7 +115,7 @@ export default function ControlPanel(): React.ReactElement {
                 <line x1="9" y1="8" x2="15" y2="8"></line>
                 <line x1="17" y1="16" x2="23" y2="16"></line>
               </svg>
-              <span>Config</span>
+              <span className="hidden sm:inline">Config</span>
             </motion.button>
           </motion.div>
         ) : (
@@ -225,6 +227,19 @@ export default function ControlPanel(): React.ReactElement {
               <div className="panel-group text-sm">
                 <span className="panel-title">View</span>
                 <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1 text-sm">
+                    <span>Mode:</span>
+                    <select
+                      className="px-2 py-1 rounded bg-slate-100"
+                      value={viewMode}
+                      onChange={(e) => setViewMode(e.target.value as 'radial' | 'linear' | 'vertical' | 'hierarchy')}
+                    >
+                      <option value="radial">Radial</option>
+                      <option value="linear">Linear (Row)</option>
+                      <option value="vertical">Vertical (Stack)</option>
+                      <option value="hierarchy">Hierarchy (Tree)</option>
+                    </select>
+                  </div>
                   <label className="flex items-center gap-1 text-sm">
                     <input type="checkbox" checked={showHistory} onChange={(e) => setShowHistory(e.target.checked)} /> Show all history
                   </label>
