@@ -1,42 +1,34 @@
 import React, { useEffect, useMemo } from 'react';
 import { usePbftStore } from './store/pbftStore';
-import type { PbftState, RenderedMessage } from './store/pbftStore';
+import type { PbftState } from './store/pbftStore';
 import { shallow } from 'zustand/shallow';
 import { radialPositions, clientPosition, linearPositions, clientPositionLinear, verticalPositions, clientPositionVertical, hierarchyPositions, clientPositionHierarchy } from './utils/layout';
-import Node from './components/Node';
-import ClientNode from './components/ClientNode';
-import MessageArrow from './components/MessageArrow';
 import CanvasStage from './components/CanvasStage';
 import PixiNode from './components/PixiNode';
 import PixiMessage from './components/PixiMessage';
 import ControlPanel from './components/ControlPanel';
-import ExplanationBox from './components/ExplanationBox';
-import LogPanel from './components/LogPanel';
 import Legend from './components/Legend';
 import ConsensusProgress from './components/ConsensusProgress';
+import PhaseTimeline from './components/PhaseTimeline';
+import TeachingTip from './components/TeachingTip';
 import { STEP_MS } from './data/phases';
 import { AnimatePresence, motion } from 'framer-motion';
 
 
 export default function App(): React.ReactElement {
-	const { nodes, client, timeline, playing, step, speed, showHistory, recentWindowMs, layoutScale, fontScale, sceneKey, hoveredNodeId, setHoveredNodeId, nodeStats, phaseAdvanceDueAt, t, viewMode, hoveredMessage } = usePbftStore(
+	const { nodes, timeline, playing, step, speed, layoutScale, fontScale, sceneKey, hoveredNodeId, setHoveredNodeId, nodeStats, viewMode, hoveredMessage } = usePbftStore(
 		(s: PbftState) => ({
 			nodes: s.nodes,
-			client: s.client,
 			timeline: s.timeline,
 			playing: s.playing,
 			step: s.step,
 			speed: s.speed,
-			showHistory: s.showHistory,
-			recentWindowMs: s.recentWindowMs,
 			layoutScale: s.layoutScale,
 			fontScale: s.fontScale,
 			sceneKey: s.sceneKey,
 			hoveredNodeId: s.hoveredNodeId,
 			setHoveredNodeId: s.setHoveredNodeId,
 			nodeStats: s.nodeStats,
-			phaseAdvanceDueAt: s.phaseAdvanceDueAt,
-			t: s.t,
 			viewMode: s.viewMode,
 			hoveredMessage: s.hoveredMessage,
 		}),
@@ -54,11 +46,11 @@ export default function App(): React.ReactElement {
 	}, [playing, speed, step]);
 
 
-	const size = { w: 1600, h: 900 };
+	const size = { w: 1400, h: 800 };
 	const center = { x: size.w / 2, y: size.h / 2 };
 
 	// Layout Calculations
-	const r = Math.round(280 * layoutScale);
+	const r = Math.round(200 * layoutScale);
 	const positions = useMemo(() => {
 		if (viewMode === 'linear') {
 			return linearPositions(nodes.length, center.x, center.y, r * 0.8);
@@ -108,12 +100,10 @@ export default function App(): React.ReactElement {
 				<CanvasStage width={size.w} height={size.h} className="w-full h-full max-w-[100vw] max-h-[100vh]">
 					{/* Edges/messages */}
 					{timeline.map((m) => {
-						// Only show active messages or recent ones
-						// We rely on PixiMessage to hide itself if it's not in the window, 
-						// but we can filter out very old ones here if needed. 
-						// Since timeline is pruned by store, we can just map it.
-
-						const durationSec = Math.max(0.4, Math.min(1.2, (STEP_MS / 1000) / speed * 0.9));
+						// Calculate animation duration based on STEP_MS and speed
+						// Clamp between 0.5s and 1.5s for smooth visibility
+						const baseDuration = (STEP_MS / 1000) / speed;
+						const durationSec = Math.max(0.5, Math.min(1.5, baseDuration * 0.85));
 
 						return (
 							<PixiMessage
@@ -147,11 +137,11 @@ export default function App(): React.ReactElement {
 					{/* Client Node */}
 					<PixiNode
 						key="client"
-						node={{ id: -1, role: 'replica', state: 'normal' }} // Mock node for client
+						node={{ id: -1, role: 'replica', state: 'normal' }}
 						x={clientPos.x}
 						y={clientPos.y}
-						hovered={false}
-						onHover={() => { }}
+						hovered={hoveredNodeId === -1}
+						onHover={setHoveredNodeId}
 					/>
 				</CanvasStage>
 			</div>
@@ -198,25 +188,18 @@ export default function App(): React.ReactElement {
 				</div>
 			</div>
 
-			{/* Phase Transition Indicator */}
-			{phaseAdvanceDueAt && (
-				<div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-30 pointer-events-none">
-					<div className="bg-slate-900/80 backdrop-blur-md text-white px-6 py-3 rounded-full font-bold text-lg animate-pulse shadow-2xl border border-white/10 flex items-center gap-3">
-						<svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-							<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-							<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-						</svg>
-						<span>Next Phase in {Math.max(0, ((phaseAdvanceDueAt - t) / 1000)).toFixed(1)}s...</span>
-					</div>
-				</div>
-			)}
 
-			{/* Right Sidebar (Collapsible/Floating) - Information */}
-			<div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 w-72 sm:w-80 flex flex-col gap-3 sm:gap-4 max-h-[calc(100vh-6rem)] sm:max-h-[calc(100vh-3rem)] overflow-y-auto pr-1 pointer-events-auto scrollbar-thin">
-				<ExplanationBox />
+
+			{/* Right Sidebar - Simplified */}
+			<div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-10 w-64 sm:w-72 flex flex-col gap-2 sm:gap-3 max-h-[calc(100vh-6rem)] sm:max-h-[calc(100vh-3rem)] overflow-y-auto pr-1 pointer-events-auto scrollbar-thin">
+				<PhaseTimeline />
 				<ConsensusProgress />
 				<Legend />
-				<LogPanel />
+			</div>
+
+			{/* Teaching Tip - Left side, below title */}
+			<div className="absolute top-24 left-4 sm:top-28 sm:left-8 z-20 pointer-events-auto">
+				<TeachingTip />
 			</div>
 
 			{/* Bottom Left Floating Control Dock */}

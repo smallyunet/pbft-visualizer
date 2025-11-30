@@ -24,21 +24,25 @@ export default function ConsensusProgress(): React.ReactElement | null {
 
   const current = phase === 'prepare' ? prepareCount : phase === 'commit' ? commitCount : 0;
   const pct = Math.min(100, (current / needed) * 100);
-  if (phase === 'pre-prepare') return null;
+  if (phase === 'pre-prepare' || phase === 'request') return null;
 
   return (
-    <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg border border-slate-200/50 p-4 transition-all duration-300 hover:shadow-xl animate-slide-in-right">
-      <div className="uppercase tracking-wide text-slate-500 font-semibold text-xs mb-2">Threshold</div>
-      <div className="mb-2 text-slate-700 text-xs sm:text-sm font-medium">Collected {current} / {needed} {phase === 'prepare' ? 'PREPARE' : 'COMMIT'} messages (need 2f+1)</div>
-      <div className="progress-bg w-full h-4 rounded-full overflow-hidden relative">
+    <div className="bg-gradient-to-br from-white to-slate-50 rounded-xl shadow-lg border border-slate-200/50 p-3 transition-all duration-300 hover:shadow-xl">
+      <div className="flex items-center justify-between mb-1.5">
+        <span className="uppercase tracking-wide text-slate-500 font-semibold text-[10px]">
+          {phase === 'prepare' ? 'PREPARE' : 'COMMIT'} Votes
+        </span>
+        <span className="text-xs font-mono text-slate-600">{current}/{needed}</span>
+      </div>
+      <div className="progress-bg w-full h-3 rounded-full overflow-hidden relative">
         <motion.div 
-          className="progress-fill h-4" 
+          className="progress-fill h-3" 
           initial={{ width: 0 }}
           animate={{ width: pct + '%' }}
           transition={{ type: "spring", stiffness: 50, damping: 15 }}
         />
-        <div className="absolute inset-0 flex items-center justify-center text-[11px] font-mono text-slate-700/80 select-none">{Math.round(pct)}%</div>
       </div>
+      <div className="text-[10px] text-slate-500 mt-1">Need 2f+1 = {needed} (f={f})</div>
     </div>
   );
 }
