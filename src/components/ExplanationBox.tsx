@@ -34,9 +34,9 @@ export default function ExplanationBox(): React.ReactElement {
   const currentCollected = phase === 'prepare' ? prepareCollected : phase === 'commit' ? commitCollected : 0;
   const remaining = Math.max(0, needed - currentCollected);
   return (
-    <div className="bg-gradient-to-br from-white to-slate-50 rounded-2xl shadow-lg border border-slate-200/50 p-4 sm:p-5 transition-all duration-300 hover:shadow-xl animate-slide-in-right">
-      <div className="text-xs uppercase tracking-wide text-slate-500 font-semibold mb-1">Phase</div>
-  <div className="text-xl sm:text-2xl font-bold mb-3 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">{title}</div>
+    <div className="bg-slate-900/80 backdrop-blur-md rounded-2xl shadow-2xl border border-slate-700/50 p-4 sm:p-5 transition-all duration-300 hover:shadow-blue-900/20 animate-slide-in-right">
+      <div className="text-xs uppercase tracking-wide text-slate-400 font-semibold mb-1">Phase</div>
+  <div className="text-xl sm:text-2xl font-bold mb-3 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent drop-shadow-sm">{title}</div>
   <AnimatePresence mode="wait">
     <motion.p
       key={explanation}
@@ -44,17 +44,17 @@ export default function ExplanationBox(): React.ReactElement {
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -5 }}
       transition={{ duration: 0.2 }}
-      className="text-slate-700 leading-relaxed text-base"
+      className="text-slate-200 leading-relaxed text-base font-light"
     >
       {explanation}
     </motion.p>
   </AnimatePresence>
       {phase !== 'pre-prepare' && (
-        <div className="mt-4 p-3 bg-blue-50 rounded-lg text-xs sm:text-sm text-slate-700 font-mono border border-blue-200 leading-relaxed">
+        <div className="mt-4 p-3 bg-blue-950/40 rounded-lg text-xs sm:text-sm text-blue-200 font-mono border border-blue-800/50 leading-relaxed shadow-inner">
           Need 2f + 1 = {needed} matching {phase === 'prepare' ? 'PREPARE' : 'COMMIT'} messages (counts local vote, f = {f}). Collected {currentCollected}/{needed}{remaining > 0 ? ` (need ${remaining} more)` : ' ✓ threshold met'}
         </div>
       )}
-      <div className="mt-3 p-3 bg-slate-100 rounded-lg text-xs sm:text-sm text-slate-700 font-mono border border-slate-200 leading-relaxed">
+      <div className="mt-3 p-3 bg-slate-800/50 rounded-lg text-xs sm:text-sm text-slate-300 font-mono border border-slate-700/50 leading-relaxed shadow-inner">
         Round {round}: proposed delta {expectedPayload}, current value {value}, after commit → {value + nextIncrement}
       </div>
     </div>

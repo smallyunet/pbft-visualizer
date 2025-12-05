@@ -30,7 +30,7 @@ export const F = 1; // (n - 1) / 3
 
 // Spacing between steps (ms). Aligned with SVG animation duration so one step's
 // arrows finish drawing before the next one starts.
-export const STEP_MS = 1200;
+export const STEP_MS = 2000;
 
 // Request phase script (Client -> Leader)
 export const requestScene: Scene = {

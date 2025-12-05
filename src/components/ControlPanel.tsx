@@ -62,7 +62,7 @@ export default function ControlPanel(): React.ReactElement {
           >
             <motion.button
               whileTap={{ scale: 0.95 }}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 ${playing ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-200'}`}
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 ${playing ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50 hover:bg-amber-500/30' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/50 border border-blue-500/50'}`}
               onClick={() => togglePlay()}
             >
               {playing ? (
@@ -80,7 +80,7 @@ export default function ControlPanel(): React.ReactElement {
 
             <motion.button
               whileTap={{ scale: 0.95 }}
-              className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-all duration-200"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-all duration-200"
               onClick={() => step(600)}
               title="Step Forward"
             >
@@ -90,14 +90,14 @@ export default function ControlPanel(): React.ReactElement {
               </svg>
             </motion.button>
 
-            <div className="h-4 sm:h-5 w-px bg-slate-200 mx-0.5 sm:mx-1"></div>
+            <div className="h-4 sm:h-5 w-px bg-slate-700 mx-0.5 sm:mx-1"></div>
 
             <div className="flex flex-col leading-none">
-              <span className="text-[9px] sm:text-[10px] text-slate-400 font-bold uppercase tracking-wider">Round</span>
-              <span className="text-xs sm:text-sm font-mono font-bold text-slate-700">{round}</span>
+              <span className="text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-wider">Round</span>
+              <span className="text-xs sm:text-sm font-mono font-bold text-slate-300">{round}</span>
             </div>
 
-            <div className="h-4 sm:h-5 w-px bg-slate-200 mx-0.5 sm:mx-1"></div>
+            <div className="h-4 sm:h-5 w-px bg-slate-700 mx-0.5 sm:mx-1"></div>
 
             <motion.button
               whileTap={{ scale: 0.95 }}

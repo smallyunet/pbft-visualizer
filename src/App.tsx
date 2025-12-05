@@ -11,6 +11,7 @@ import Legend from './components/Legend';
 import ConsensusProgress from './components/ConsensusProgress';
 import PhaseTimeline from './components/PhaseTimeline';
 import TeachingTip from './components/TeachingTip';
+import SimulationTicker from './components/SimulationTicker';
 import { STEP_MS } from './data/phases';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -37,13 +38,8 @@ export default function App(): React.ReactElement {
 	const phase = usePbftStore((s) => s.phase);
 
 
-	// Timer loop: advance simulated clock faster when speed is higher.
-	useEffect(() => {
-		if (!playing) return;
-		const tickMs = 16; // ~60fps for smooth animation
-		const id = setInterval(() => step(tickMs * speed), tickMs);
-		return () => clearInterval(id);
-	}, [playing, speed, step]);
+	// Timer loop removed in favor of SimulationTicker inside CanvasStage
+
 
 
 	const size = { w: 1400, h: 800 };
@@ -94,16 +90,17 @@ export default function App(): React.ReactElement {
 	}, []);
 
 	return (
-		<div className="min-h-screen bg-slate-50 overflow-hidden font-sans text-slate-900" style={{ fontSize: `${fontScale * 16}px` }}>
+		<div className="min-h-screen bg-slate-950 overflow-hidden font-sans text-slate-200" style={{ fontSize: `${fontScale * 16}px` }}>
 			{/* Main Canvas Area - Full Screen */}
-			<div className="absolute inset-0 z-0 flex items-center justify-center bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+			<div className="absolute inset-0 z-0 flex items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800 via-slate-950 to-black">
 				<CanvasStage width={size.w} height={size.h} className="w-full h-full max-w-[100vw] max-h-[100vh]">
+					<SimulationTicker />
 					{/* Edges/messages */}
 					{timeline.map((m) => {
 						// Calculate animation duration based on STEP_MS and speed
-						// Clamp between 0.5s and 1.5s for smooth visibility
+						// Clamp between 0.5s and 3.0s for smooth visibility
 						const baseDuration = (STEP_MS / 1000) / speed;
-						const durationSec = Math.max(0.5, Math.min(1.5, baseDuration * 0.85));
+						const durationSec = Math.max(0.5, Math.min(3.0, baseDuration * 0.9));
 
 						return (
 							<PixiMessage

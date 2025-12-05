@@ -14,11 +14,11 @@ interface PixiMessageProps {
 }
 
 const COLORS: Record<string, number> = {
-    'request': 0x64748b,     // slate-500
-    'pre-prepare': 0x0ea5e9, // sky-500
-    'prepare': 0xa855f7,     // purple-500
-    'commit': 0xf59e0b,      // amber-500
-    'reply': 0x22c55e,       // green-500
+    'request': 0x94a3b8,     // slate-400
+    'pre-prepare': 0x38bdf8, // sky-400
+    'prepare': 0xc084fc,     // purple-400
+    'commit': 0xfacc15,      // yellow-400
+    'reply': 0x4ade80,       // green-400
 };
 
 const KIND_LABELS: Record<string, string> = {
@@ -60,10 +60,16 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
 
         const nx = -dy / norm;
         const ny = dx / norm;
-        const curve = 70;
+        
+        // Add randomness based on message ID hash to prevent overlap
+        // Simple hash from string id
+        const hash = message.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const offset = (hash % 50) - 25; // -25 to +25 variation
+        
+        const curve = 70 + offset;
 
         return { x: mx + nx * curve, y: my + ny * curve };
-    }, [from.x, from.y, to.x, to.y]);
+    }, [from.x, from.y, to.x, to.y, message.id]);
 
     // Memoized bezier position calculator
     const getPosAt = useCallback((t: number) => {
@@ -122,11 +128,13 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
         pathRef.current.clear();
 
         // Dashed line showing the path
-        const pathAlpha = 0.25;
+        // Reduced alpha to reduce visual noise
+        const pathAlpha = 0.1;
         pathRef.current.lineStyle(1.5, conflicting ? 0xff0000 : 0x94a3b8, pathAlpha);
 
         // Draw dashed path
         const segments = 20;
+
         for (let i = 0; i < segments; i++) {
             if (i % 2 === 0) {
                 const t1 = i / segments;
@@ -292,10 +300,16 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
     }
 
     const labelStyle = useMemo(() => new TextStyle({
-        fill: conflicting ? '#ef4444' : '#475569',
-        fontSize: 11,
-        fontWeight: 'bold',
+        fill: '#ffffff', // White text
+        fontSize: 13,    // Larger font
+        fontWeight: '900', // Extra bold
         align: 'center',
+        stroke: '#000000', // Black outline
+        strokeThickness: 3,
+        dropShadow: true,
+        dropShadowColor: '#000000',
+        dropShadowBlur: 2,
+        dropShadowDistance: 1,
     }), [conflicting]);
 
     return (

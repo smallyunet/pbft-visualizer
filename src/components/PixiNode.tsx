@@ -16,10 +16,10 @@ interface PixiNodeProps {
 
 // Status color and label mapping
 const STATUS_CONFIG: Record<string, { color: number; label: string }> = {
-    idle: { color: 0x94a3b8, label: '' },
-    proposed: { color: 0x0ea5e9, label: 'READY' },
-    prepared: { color: 0xa855f7, label: 'PREPARED' },
-    committed: { color: 0xf59e0b, label: 'COMMITTED' },
+    idle: { color: 0x475569, label: '' },
+    proposed: { color: 0x38bdf8, label: 'READY' }, // Sky-400
+    prepared: { color: 0xc084fc, label: 'PREPARED' }, // Purple-400
+    committed: { color: 0xfacc15, label: 'COMMITTED' }, // Yellow-400
 };
 
 export default function PixiNode({ node, x, y, hovered, status = 'idle', prepareCount = 0, commitCount = 0, onHover }: PixiNodeProps) {
@@ -64,21 +64,13 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
         g.drawCircle(0, 0, radius + 10 * pulse);
         g.endFill();
 
-        // Main circle - user icon style
-        g.beginFill(0x475569);
-        g.lineStyle(2, 0x94a3b8);
+        // Main circle - simplified to standard node style
+        g.beginFill(0x334155); // Slate-700
+        g.lineStyle(3, 0x94a3b8);
         g.drawCircle(0, 0, radius);
         g.endFill();
-
-        // User head
-        g.beginFill(0xffffff, 0.9);
-        g.drawCircle(0, -6, 10);
-        g.endFill();
-
-        // User body
-        g.beginFill(0xffffff, 0.9);
-        g.drawEllipse(0, 12, 14, 10);
-        g.endFill();
+        
+        // "C" letter is drawn by Text component now, no need for custom drawing
     }
 
     function drawVoteSlots(g: any) {
@@ -86,72 +78,101 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
         const showPrepare = phase === 'prepare' || phase === 'commit' || phase === 'reply';
         const showCommit = phase === 'commit' || phase === 'reply';
 
-        const slotRadius = radius + 22;
-        const slotSize = 10;
+        // Move slots further out for better visibility
+        const slotRadius = radius + 28;
+        const slotSize = 6; // Radius of the dot
 
         // PREPARE vote slots (left arc) - purple
         if (showPrepare) {
-            const prepareStartAngle = Math.PI * 0.75;
+            const prepareStartAngle = Math.PI * 0.8; // Start a bit lower
+            const angleStep = 0.4;
+            
             for (let i = 0; i < needed; i++) {
-                const angle = prepareStartAngle + (i - (needed - 1) / 2) * 0.35;
+                const angle = prepareStartAngle + (i - (needed - 1) / 2) * angleStep;
                 const sx = slotRadius * Math.cos(angle);
                 const sy = slotRadius * Math.sin(angle);
 
                 const filled = i < prepareCount;
 
-                // Slot background
-                g.beginFill(filled ? 0xa855f7 : 0x1e293b, filled ? 1 : 0.6);
-                g.lineStyle(1.5, 0xa855f7, filled ? 1 : 0.4);
-                g.drawRoundedRect(sx - slotSize / 2, sy - slotSize / 2, slotSize, slotSize, 2);
+                // Slot background (empty socket)
+                g.beginFill(0x1e293b, 0.5);
+                g.lineStyle(1, 0x475569, 0.5);
+                g.drawCircle(sx, sy, slotSize);
                 g.endFill();
 
-                // Checkmark for filled slots
+                // Filled Orb
                 if (filled) {
-                    g.lineStyle(2, 0xffffff, 1);
-                    g.moveTo(sx - 2.5, sy);
-                    g.lineTo(sx - 0.5, sy + 2.5);
-                    g.lineTo(sx + 3, sy - 2);
+                    // Glow
+                    g.beginFill(0xc084fc, 0.4);
+                    g.lineStyle(0);
+                    g.drawCircle(sx, sy, slotSize + 4);
+                    g.endFill();
+
+                    // Core
+                    g.beginFill(0xc084fc); // Purple-400
+                    g.lineStyle(1.5, 0xffffff);
+                    g.drawCircle(sx, sy, slotSize);
+                    g.endFill();
                 }
             }
         }
 
         // COMMIT vote slots (right arc) - amber
         if (showCommit) {
-            const commitStartAngle = Math.PI * 0.25;
+            const commitStartAngle = Math.PI * 0.2; // Start a bit lower
+            const angleStep = 0.4;
+
             for (let i = 0; i < needed; i++) {
-                const angle = commitStartAngle - (i - (needed - 1) / 2) * 0.35;
+                const angle = commitStartAngle - (i - (needed - 1) / 2) * angleStep;
                 const sx = slotRadius * Math.cos(angle);
                 const sy = slotRadius * Math.sin(angle);
 
                 const filled = i < commitCount;
 
                 // Slot background
-                g.beginFill(filled ? 0xf59e0b : 0x1e293b, filled ? 1 : 0.6);
-                g.lineStyle(1.5, 0xf59e0b, filled ? 1 : 0.4);
-                g.drawRoundedRect(sx - slotSize / 2, sy - slotSize / 2, slotSize, slotSize, 2);
+                g.beginFill(0x1e293b, 0.5);
+                g.lineStyle(1, 0x475569, 0.5);
+                g.drawCircle(sx, sy, slotSize);
                 g.endFill();
 
-                // Checkmark for filled slots
+                // Filled Orb
                 if (filled) {
-                    g.lineStyle(2, 0xffffff, 1);
-                    g.moveTo(sx - 2.5, sy);
-                    g.lineTo(sx - 0.5, sy + 2.5);
-                    g.lineTo(sx + 3, sy - 2);
+                    // Glow
+                    g.beginFill(0xfacc15, 0.4);
+                    g.lineStyle(0);
+                    g.drawCircle(sx, sy, slotSize + 4);
+                    g.endFill();
+
+                    // Core
+                    g.beginFill(0xfacc15); // Yellow-400
+                    g.lineStyle(1.5, 0xffffff);
+                    g.drawCircle(sx, sy, slotSize);
+                    g.endFill();
                 }
             }
         }
 
-        // Threshold met indicator
+        // Threshold met indicator - A connecting ring
         if ((showPrepare && prepareCount >= needed) || (showCommit && commitCount >= needed)) {
-            const pulse = Math.sin(pulseRef.current * 2);
-            g.lineStyle(2.5, 0x22c55e, 0.7 + pulse * 0.2);
-            g.drawCircle(0, 0, radius + 14);
+             // No extra ring needed if the orbs are glowing enough
         }
     }
 
     function drawStatusBadge(g: any) {
-        // Status is now indicated by the green threshold ring when reached
-        // No additional badge needed for cleaner look
+        // Draw status text badge below the node
+        if (status === 'idle' && !isFaulty) return;
+
+        const config = isFaulty ? { color: 0xf87171, label: 'FAULTY' } : STATUS_CONFIG[status]; // Red-400
+        if (!config || !config.label) return;
+
+        const badgeW = 60;
+        const badgeH = 16;
+        const badgeY = radius + 28; // Position below the label
+
+        // Badge background
+        g.beginFill(config.color);
+        g.drawRoundedRect(-badgeW / 2, badgeY, badgeW, badgeH, 8);
+        g.endFill();
     }
 
     function drawGlowEffect(g: any) {
@@ -162,16 +183,16 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
         let glowAlpha = 0.2;
 
         if (isFaulty) {
-            glowColor = 0xff0000;
+            glowColor = 0xf87171; // Red-400
             glowAlpha = 0.3;
         } else if (status === 'committed') {
-            glowColor = 0xf59e0b;
+            glowColor = 0xfacc15; // Yellow-400
             glowAlpha = 0.35;
         } else if (status === 'prepared') {
-            glowColor = 0xa855f7;
+            glowColor = 0xc084fc; // Purple-400
             glowAlpha = 0.3;
         } else if (isLeader) {
-            glowColor = 0x10b981;
+            glowColor = 0x34d399; // Emerald-400
             glowAlpha = 0.35;
         }
 
@@ -181,23 +202,24 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
     }
 
     function drawMainCircle(g: any) {
-        const fillColor = isFaulty ? 0xef4444 : isLeader ? 0x10b981 : 0x3b82f6;
+        const fillColor = isFaulty ? 0x991b1b : isLeader ? 0x065f46 : 0x1e293b; // Darker base colors: Red-800, Emerald-800, Slate-800
+        const strokeColor = isFaulty ? 0xf87171 : isLeader ? 0x34d399 : 0x94a3b8; // Brighter strokes: Red-400, Emerald-400, Slate-400
         const borderWidth = hovered ? 4 : 3;
 
         // Shadow
-        g.beginFill(0x000000, 0.15);
-        g.drawCircle(2, 3, radius);
+        g.beginFill(0x000000, 0.3);
+        g.drawCircle(4, 4, radius);
         g.endFill();
 
         // Main circle
         g.beginFill(fillColor);
-        g.lineStyle(borderWidth, 0xffffff);
+        g.lineStyle(borderWidth, strokeColor);
         g.drawCircle(0, 0, radius);
         g.endFill();
 
         // Faulty cross
         if (isFaulty) {
-            g.lineStyle(4, 0xffffff, 0.8);
+            g.lineStyle(4, 0xf87171, 0.8);
             const s = radius * 0.4;
             g.moveTo(-s, -s);
             g.lineTo(s, s);
@@ -234,15 +256,19 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
 
     const textStyle = useMemo(() => new TextStyle({
         fill: '#ffffff',
-        fontSize: isClient ? 14 : 15,
+        fontSize: isClient ? 14 : 20, // Increased from 15
         fontWeight: 'bold',
         align: 'center',
+        dropShadow: true,
+        dropShadowColor: '#000000',
+        dropShadowBlur: 2,
+        dropShadowDistance: 1,
     }), [isClient]);
 
     const labelStyle = useMemo(() => new TextStyle({
         fill: '#cbd5e1',
-        fontSize: 10,
-        fontWeight: 'normal',
+        fontSize: 11, // Increased from 10
+        fontWeight: 'bold', // Changed to bold
         align: 'center',
     }), []);
 
@@ -254,8 +280,12 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
         letterSpacing: 0.5,
     }), []);
 
-    const displayId = isClient ? '' : `N${node.id}`;
+    const displayId = isClient ? 'C' : `N${node.id}`;
     const displayLabel = isClient ? 'CLIENT' : isLeader ? 'LEADER' : '';
+    
+    // Determine status label text
+    const statusConfig = isFaulty ? { label: 'FAULTY' } : STATUS_CONFIG[status];
+    const showStatus = (status !== 'idle' || isFaulty) && statusConfig?.label;
 
     return (
         <Container
@@ -281,6 +311,14 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
                 y={isClient ? radius + 14 : radius + 14}
                 style={labelStyle}
             />
+            {showStatus && (
+                <Text
+                    text={statusConfig.label}
+                    anchor={0.5}
+                    y={radius + 36} // Centered in the badge drawn in drawStatusBadge
+                    style={statusStyle}
+                />
+            )}
         </Container>
     );
 }
