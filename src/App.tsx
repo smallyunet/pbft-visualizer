@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { usePbftStore } from './store/pbftStore';
 import type { PbftState } from './store/pbftStore';
 import { shallow } from 'zustand/shallow';
@@ -12,6 +12,7 @@ import ConsensusProgress from './components/ConsensusProgress';
 import PhaseTimeline from './components/PhaseTimeline';
 import TeachingTip from './components/TeachingTip';
 import SimulationTicker from './components/SimulationTicker';
+import CentralStatus from './components/CentralStatus';
 import { STEP_MS } from './data/phases';
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -40,9 +41,16 @@ export default function App(): React.ReactElement {
 
 	// Timer loop removed in favor of SimulationTicker inside CanvasStage
 
+    const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
+    useEffect(() => {
+        const handleResize = () => {
+            setSize({ w: window.innerWidth, h: window.innerHeight });
+        };
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
-	const size = { w: 1400, h: 800 };
 	const center = { x: size.w / 2, y: size.h / 2 };
 
 	// Layout Calculations
@@ -95,6 +103,10 @@ export default function App(): React.ReactElement {
 			<div className="absolute inset-0 z-0 flex items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800 via-slate-950 to-black">
 				<CanvasStage width={size.w} height={size.h} className="w-full h-full max-w-[100vw] max-h-[100vh]">
 					<SimulationTicker />
+                    
+                    {/* Central Status Announcer */}
+                    <CentralStatus x={center.x} y={center.y} />
+
 					{/* Edges/messages */}
 					{timeline.map((m) => {
 						// Calculate animation duration based on STEP_MS and speed

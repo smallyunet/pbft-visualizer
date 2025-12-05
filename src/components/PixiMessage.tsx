@@ -64,9 +64,9 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
         // Add randomness based on message ID hash to prevent overlap
         // Simple hash from string id
         const hash = message.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const offset = (hash % 50) - 25; // -25 to +25 variation
+        const offset = (hash % 30) - 15; // Reduced variation for cleaner look
         
-        const curve = 70 + offset;
+        const curve = 40 + offset; // Reduced curve magnitude
 
         return { x: mx + nx * curve, y: my + ny * curve };
     }, [from.x, from.y, to.x, to.y, message.id]);
@@ -301,7 +301,7 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
 
     const labelStyle = useMemo(() => new TextStyle({
         fill: '#ffffff', // White text
-        fontSize: 13,    // Larger font
+        fontSize: 14,    // Larger font
         fontWeight: '900', // Extra bold
         align: 'center',
         stroke: '#000000', // Black outline
