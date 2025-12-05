@@ -10,7 +10,16 @@ interface CentralStatusProps {
 
 export default function CentralStatus({ x, y }: CentralStatusProps) {
     const phase = usePbftStore((s) => s.phase);
-    const round = usePbftStore((s) => s.round);
+    const nodeStats = usePbftStore((s) => s.nodeStats);
+    const f = usePbftStore((s) => s.f);
+    const nodes = usePbftStore((s) => s.nodes);
+
+    // Calculate global progress
+    const needed = 2 * f + 1;
+    const healthyNodes = nodes.filter(n => n.state !== 'faulty').length;
+    
+    const preparedCount = nodeStats.filter(n => n.status === 'prepared' || n.status === 'committed').length;
+    const committedCount = nodeStats.filter(n => n.status === 'committed').length;
 
     const phaseTitle = useMemo(() => {
         switch (phase) {
@@ -27,12 +36,14 @@ export default function CentralStatus({ x, y }: CentralStatusProps) {
         switch (phase) {
             case 'request': return 'Client sends request to Leader';
             case 'pre-prepare': return 'Leader broadcasts proposal';
-            case 'prepare': return 'Replicas exchange votes (Need 2f+1)';
-            case 'commit': return 'Replicas commit to order (Need 2f+1)';
+            case 'prepare': 
+                return `Replicas exchange votes (${preparedCount}/${healthyNodes} Prepared)`;
+            case 'commit': 
+                return `Replicas commit to order (${committedCount}/${healthyNodes} Committed)`;
             case 'reply': return 'Replicas reply result to Client';
             default: return '';
         }
-    }, [phase]);
+    }, [phase, preparedCount, committedCount, healthyNodes]);
 
     const titleStyle = useMemo(() => new TextStyle({
         fill: '#ffffff',

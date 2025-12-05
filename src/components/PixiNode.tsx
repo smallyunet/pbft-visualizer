@@ -179,6 +179,21 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
             // Background Arc (Gray) - More subtle
             drawArc(Math.PI * 0.8, Math.PI * 2.2, 0x334155, 0.3); // Reduced alpha
 
+            // Threshold Marker (White tick at 100% of needed)
+            // Since maxVotes = needed, the threshold is at progress = 1.0
+            // But let's show the full capacity (N-1) or just the threshold?
+            // Current logic: maxVotes IS the threshold (needed). So the arc fills up when threshold is met.
+            // That's actually good for beginners: "Fill the bar to win".
+            
+            // Let's add a small tick at the end to signify "Goal"
+            const endAngle = Math.PI * 0.8 + (Math.PI * 1.4);
+            g.lineStyle(2, 0xffffff, 0.5);
+            const r1 = arcRadius - 4;
+            const r2 = arcRadius + 4;
+            g.moveTo(r1 * Math.cos(endAngle), r1 * Math.sin(endAngle));
+            g.lineTo(r2 * Math.cos(endAngle), r2 * Math.sin(endAngle));
+            g.lineStyle(0);
+
             // Progress Arc (Purple)
             if (progress > 0) {
                 const start = Math.PI * 0.8;
@@ -196,6 +211,15 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
             // Background Arc - More subtle
             g.lineStyle(arcWidth, 0x334155, 0.3);
             g.arc(0, 0, outerRadius, Math.PI * 0.8, Math.PI * 2.2);
+            g.lineStyle(0);
+
+            // Threshold Tick
+            const endAngle = Math.PI * 0.8 + (Math.PI * 1.4);
+            g.lineStyle(2, 0xffffff, 0.5);
+            const r1 = outerRadius - 4;
+            const r2 = outerRadius + 4;
+            g.moveTo(r1 * Math.cos(endAngle), r1 * Math.sin(endAngle));
+            g.lineTo(r2 * Math.cos(endAngle), r2 * Math.sin(endAngle));
             g.lineStyle(0);
 
             // Progress Arc (Amber)

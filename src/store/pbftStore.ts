@@ -19,7 +19,7 @@ export type PbftState = {
 	phaseStart: number; // absolute time when current phase started (keeps global clock monotonic)
 	phase: Phase;
 	playing: boolean;
-	speed: number; // 0.5, 1, 2
+	speed: 0.5, // 0.5, 1, 2
 	autoAdvance: boolean; // automatically move to next phase
 	phaseDelayMs: number; // extra pause between phases
 	phaseAdvanceDueAt: number | null; // scheduled time to move to next phase
@@ -157,7 +157,7 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		phaseStart: 0,
 		phase: initialPhase,
 		playing: false,
-		speed: pref.speed ?? 1,
+		speed: pref.speed ?? 0.5,
 		autoAdvance: pref.autoAdvance ?? true,
 		phaseDelayMs: pref.phaseDelayMs ?? 2000,
 		phaseAdvanceDueAt: null,
