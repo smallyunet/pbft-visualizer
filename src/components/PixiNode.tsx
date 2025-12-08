@@ -1,7 +1,8 @@
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useCallback, useEffect } from 'react';
 import { Container, Graphics, Text, useTick } from '@pixi/react';
 import { TextStyle } from 'pixi.js';
 import { NodeUi, usePbftStore } from '../store/pbftStore';
+import { COLORS, getStatusColor } from '../styles/theme';
 
 interface PixiNodeProps {
     node: NodeUi;
@@ -14,90 +15,193 @@ interface PixiNodeProps {
     onHover: (id: number | null) => void;
 }
 
-// Status color and label mapping
-const STATUS_CONFIG: Record<string, { color: number; label: string }> = {
-    idle: { color: 0x475569, label: '' },
-    proposed: { color: 0x38bdf8, label: 'READY' }, // Sky-400
-    prepared: { color: 0xc084fc, label: 'PREPARED' }, // Purple-400
-    committed: { color: 0xfacc15, label: 'COMMITTED' }, // Yellow-400
-};
+// --- Sub-Components for Optimization ---
 
-export default function PixiNode({ node, x, y, hovered, status = 'idle', prepareCount = 0, commitCount = 0, onHover }: PixiNodeProps) {
-    const isLeader = node.role === 'leader';
-    const isFaulty = node.state === 'faulty';
-    const isClient = node.id === -1;
-    const f = usePbftStore((s) => s.f);
-    const phase = usePbftStore((s) => s.phase);
-
-    const displayId = isClient ? 'C' : node.id.toString();
-    const displayLabel = isClient ? 'CLIENT' : (isLeader ? 'LEADER' : `REPLICA ${node.id}`);
-    
-    const statusConfig = isFaulty ? { color: 0xf87171, label: 'FAULTY' } : STATUS_CONFIG[status];
-    const showStatus = (status !== 'idle' || isFaulty) && statusConfig && statusConfig.label;
-
-    const needed = 2 * f + 1;
-    const radius = isClient ? 28 : 38;
-    const graphicsRef = useRef<any>(null);
+// 1. Glow Effect (Animated)
+const NodeGlow = React.memo(({ active, color, radius }: { active: boolean; color: number; radius: number }) => {
+    const ref = useRef<any>(null);
     const pulseRef = useRef(0);
-    
-    // Action Bubble State
-    const [bubbleText, setBubbleText] = React.useState<string | null>(null);
-    const bubbleTimerRef = useRef<any>(null);
-    const prevStatusRef = useRef(status);
-    const prevPhaseRef = useRef(phase);
-
-    // Detect status changes to trigger bubbles
-    React.useEffect(() => {
-        if (prevStatusRef.current !== status) {
-            if (status === 'proposed') showBubble('New Proposal');
-            if (status === 'prepared') showBubble('Quorum Met! (2f+1)');
-            if (status === 'committed') showBubble('Quorum Met! (2f+1)');
-            prevStatusRef.current = status;
-        }
-    }, [status]);
-
-    // Detect phase changes for Leader actions
-    React.useEffect(() => {
-        if (prevPhaseRef.current !== phase) {
-            if (isLeader && phase === 'pre-prepare') showBubble('Broadcasting Proposal');
-            if (phase === 'reply' && status === 'committed') showBubble('Replying to Client');
-            prevPhaseRef.current = phase;
-        }
-    }, [phase, isLeader, status]);
-
-    function showBubble(text: string) {
-        setBubbleText(text);
-        if (bubbleTimerRef.current) clearTimeout(bubbleTimerRef.current);
-        bubbleTimerRef.current = setTimeout(() => setBubbleText(null), 2500);
-    }
 
     useTick((delta) => {
-        pulseRef.current += delta * 0.025;
-        if (graphicsRef.current) {
-            drawNodeGraphics(graphicsRef.current);
-        }
+        if (!active || !ref.current) return;
+        pulseRef.current += delta * 0.05;
+        const scale = 1 + Math.sin(pulseRef.current) * 0.05;
+        ref.current.scale.set(scale);
+        ref.current.alpha = 0.6 + Math.sin(pulseRef.current) * 0.2;
     });
 
-    function drawNodeGraphics(g: any) {
+    const draw = useCallback((g: any) => {
         g.clear();
+        g.beginFill(color);
+        g.drawCircle(0, 0, radius + 5);
+        g.endFill();
+    }, [color, radius]);
+
+    return <Graphics ref={ref} draw={draw} visible={active} />;
+});
+
+// 2. Base Node Shape (Static-ish)
+const NodeBase = React.memo(({ isClient, isLeader, isFaulty, radius, hovered }: { isClient: boolean; isLeader: boolean; isFaulty: boolean; radius: number; hovered: boolean }) => {
+    const draw = useCallback((g: any) => {
+        g.clear();
+        
+        // Colors
+        let fillColor = COLORS.node.idle;
+        let strokeColor = COLORS.stroke.idle;
 
         if (isClient) {
-            drawClientNode(g);
-            return;
+            fillColor = COLORS.node.client;
+            strokeColor = COLORS.node.clientBorder;
+        } else if (isFaulty) {
+            fillColor = COLORS.node.faulty;
+            strokeColor = COLORS.stroke.faulty;
+        } else if (isLeader) {
+            fillColor = COLORS.node.leader;
+            strokeColor = COLORS.stroke.leader;
         }
 
-        drawVoteSlots(g);
-        drawStatusBadge(g);
-        drawGlowEffect(g);
-        drawMainCircle(g);
-        drawLeaderCrown(g);
-        drawLocalLog(g);
-        if (bubbleText) drawActionBubble(g);
-    }
+        const borderWidth = hovered ? 4 : 3;
 
-    function drawLocalLog(g: any) {
-        // Draw a stack of blocks to represent the local ledger
-        const round = usePbftStore.getState().round;
+        // Shadow
+        g.beginFill(0x000000, 0.3);
+        g.drawCircle(4, 4, radius);
+        g.endFill();
+
+        // Main Circle
+        g.beginFill(fillColor);
+        g.lineStyle(borderWidth, strokeColor);
+        g.drawCircle(0, 0, radius);
+        g.endFill();
+
+        // Faulty Cross
+        if (isFaulty) {
+            g.lineStyle(4, COLORS.stroke.faulty, 0.8);
+            const s = radius * 0.4;
+            g.moveTo(-s, -s);
+            g.lineTo(s, s);
+            g.moveTo(s, -s);
+            g.lineTo(-s, s);
+        }
+
+        // Leader Crown
+        if (isLeader && !isClient) {
+            const crownY = -radius - 18;
+            const crownWidth = 24;
+            const crownHeight = 14;
+            
+            g.lineStyle(1, 0xf59e0b); // Amber-500
+            g.beginFill(0xfbbf24);    // Amber-400
+            g.moveTo(-crownWidth / 2, crownY + crownHeight);
+            g.lineTo(-crownWidth / 2, crownY + 4);
+            g.lineTo(-crownWidth / 4, crownY + 8);
+            g.lineTo(0, crownY);
+            g.lineTo(crownWidth / 4, crownY + 8);
+            g.lineTo(crownWidth / 2, crownY + 4);
+            g.lineTo(crownWidth / 2, crownY + crownHeight);
+            g.closePath();
+            g.endFill();
+
+            // Jewel
+            g.beginFill(0xdc2626); // Red
+            g.lineStyle(0);
+            g.drawCircle(0, crownY + 4, 2);
+            g.endFill();
+        }
+
+    }, [isClient, isLeader, isFaulty, radius, hovered]);
+
+    return <Graphics draw={draw} />;
+});
+
+// 3. Vote Slots & Status Badge (Updates on state change)
+const NodeStatusOverlay = React.memo(({ 
+    radius, status, isFaulty, phase, prepareCount, commitCount, needed 
+}: { 
+    radius: number; status: string; isFaulty: boolean; phase: string; prepareCount: number; commitCount: number; needed: number 
+}) => {
+    
+    const draw = useCallback((g: any) => {
+        g.clear();
+        if (isFaulty) return; // Faulty nodes might not show normal status rings
+
+        // --- Vote Slots ---
+        const showPrepare = phase === 'prepare' || phase === 'commit' || phase === 'reply';
+        const showCommit = phase === 'commit' || phase === 'reply';
+        const arcRadius = radius + 12;
+        const arcWidth = 4;
+
+        const drawArc = (startAngle: number, endAngle: number, color: number, alpha: number = 1) => {
+            g.lineStyle(arcWidth, color, alpha);
+            g.arc(0, 0, arcRadius, startAngle, endAngle);
+            g.lineStyle(0);
+        };
+
+        // Prepare Votes
+        if (showPrepare) {
+            const progress = Math.min(prepareCount / needed, 1);
+            // Background
+            drawArc(Math.PI * 0.8, Math.PI * 2.2, COLORS.ui.voteSlotBg, 0.3);
+            // Progress
+            if (progress > 0) {
+                const start = Math.PI * 0.8;
+                const end = start + (Math.PI * 1.4 * progress);
+                drawArc(start, end, COLORS.status.prepared);
+            }
+            // Threshold Tick
+            const endAngle = Math.PI * 0.8 + (Math.PI * 1.4);
+            g.lineStyle(2, COLORS.ui.voteSlotThreshold, 0.5);
+            const r1 = arcRadius - 4;
+            const r2 = arcRadius + 4;
+            g.moveTo(r1 * Math.cos(endAngle), r1 * Math.sin(endAngle));
+            g.lineTo(r2 * Math.cos(endAngle), r2 * Math.sin(endAngle));
+        }
+
+        // Commit Votes
+        if (showCommit) {
+            const outerRadius = arcRadius + 8;
+            const progress = Math.min(commitCount / needed, 1);
+            
+            // Background
+            g.lineStyle(arcWidth, COLORS.ui.voteSlotBg, 0.3);
+            g.arc(0, 0, outerRadius, Math.PI * 0.8, Math.PI * 2.2);
+            
+            // Progress
+            if (progress > 0) {
+                const start = Math.PI * 0.8;
+                const end = start + (Math.PI * 1.4 * progress);
+                g.lineStyle(arcWidth, COLORS.status.committed);
+                g.arc(0, 0, outerRadius, start, end);
+            }
+             // Threshold Tick
+             const endAngle = Math.PI * 0.8 + (Math.PI * 1.4);
+             g.lineStyle(2, COLORS.ui.voteSlotThreshold, 0.5);
+             const r1 = outerRadius - 4;
+             const r2 = outerRadius + 4;
+             g.moveTo(r1 * Math.cos(endAngle), r1 * Math.sin(endAngle));
+             g.lineTo(r2 * Math.cos(endAngle), r2 * Math.sin(endAngle));
+        }
+
+        // --- Status Badge ---
+        if (status !== 'idle') {
+            const color = getStatusColor(status, isFaulty);
+            const badgeW = 60;
+            const badgeH = 16;
+            const badgeY = radius + 28;
+
+            g.beginFill(color);
+            g.drawRoundedRect(-badgeW / 2, badgeY, badgeW, badgeH, 8);
+            g.endFill();
+        }
+
+    }, [radius, status, isFaulty, phase, prepareCount, commitCount, needed]);
+
+    return <Graphics draw={draw} />;
+});
+
+// 4. Local Log (Updates on round change)
+const NodeLog = React.memo(({ radius, round }: { radius: number; round: number }) => {
+    const draw = useCallback((g: any) => {
+        g.clear();
         const committedBlocks = round - 1;
         if (committedBlocks <= 0) return;
 
@@ -113,257 +217,135 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
             g.endFill();
         }
         
-        // If more than 5, show a small plus
         if (committedBlocks > 5) {
              g.beginFill(0xffffff);
              g.drawCircle(startX + blockW/2, startY - (5 * (blockH + 2)) - 2, 1.5);
              g.endFill();
         }
-    }
+    }, [radius, round]);
 
-    function drawActionBubble(g: any) {
-        if (!bubbleText) return;
+    return <Graphics draw={draw} />;
+});
+
+// 5. Action Bubble (Dynamic)
+const ActionBubble = React.memo(({ text, radius }: { text: string; radius: number }) => {
+    const draw = useCallback((g: any) => {
+        g.clear();
+        if (!text) return;
         
         const bubbleW = 100;
         const bubbleH = 24;
         const bubbleY = -radius - 35;
         
-        // Bubble tail
-        g.beginFill(0xffffff);
+        // Tail
+        g.beginFill(COLORS.ui.bubbleBg);
         g.moveTo(0, -radius - 10);
         g.lineTo(-6, bubbleY + bubbleH/2);
         g.lineTo(6, bubbleY + bubbleH/2);
         g.endFill();
 
-        // Bubble body
-        g.beginFill(0xffffff);
-        g.lineStyle(1, 0xcbd5e1);
+        // Body
+        g.beginFill(COLORS.ui.bubbleBg);
+        g.lineStyle(1, COLORS.ui.bubbleBorder);
         g.drawRoundedRect(-bubbleW/2, bubbleY - bubbleH/2, bubbleW, bubbleH, 12);
         g.endFill();
-    }
+    }, [text, radius]);
 
-    function drawClientNode(g: any) {
-        const pulse = 1 + Math.sin(pulseRef.current) * 0.03;
+    return <Graphics draw={draw} />;
+});
 
-        // Outer glow
-        g.beginFill(0x64748b, 0.1);
-        g.drawCircle(0, 0, radius + 10 * pulse);
-        g.endFill();
 
-        // Main circle - simplified to standard node style
-        g.beginFill(0x334155); // Slate-700
-        g.lineStyle(3, 0x94a3b8);
-        g.drawCircle(0, 0, radius);
-        g.endFill();
-        
-        // "C" letter is drawn by Text component now, no need for custom drawing
-    }
+// --- Main Component ---
 
-    function drawVoteSlots(g: any) {
-        // Only show vote slots during relevant phases
-        const showPrepare = phase === 'prepare' || phase === 'commit' || phase === 'reply';
-        const showCommit = phase === 'commit' || phase === 'reply';
+export default function PixiNode({ node, x, y, hovered, status = 'idle', prepareCount = 0, commitCount = 0, onHover }: PixiNodeProps) {
+    const isLeader = node.role === 'leader';
+    const isFaulty = node.state === 'faulty';
+    const isClient = node.id === -1;
+    const f = usePbftStore((s) => s.f);
+    const phase = usePbftStore((s) => s.phase);
+    const round = usePbftStore((s) => s.round);
+    const fontScale = usePbftStore((s) => s.fontScale);
 
-        // Progress Arc Parameters
-        const arcRadius = radius + 12;
-        const arcWidth = 4; // Reduced from 6
-        
-        // Helper to draw an arc
-        const drawArc = (startAngle: number, endAngle: number, color: number, alpha: number = 1) => {
-            g.lineStyle(arcWidth, color, alpha);
-            g.arc(0, 0, arcRadius, startAngle, endAngle);
-            g.lineStyle(0); // Reset
-        };
+    const displayId = isClient ? 'C' : node.id.toString();
+    const displayLabel = isClient ? 'CLIENT' : (isLeader ? 'LEADER' : `REPLICA ${node.id}`);
+    
+    // Status Label
+    const statusLabel = isFaulty ? 'FAULTY' : (status === 'idle' ? '' : (status === 'proposed' ? 'READY' : status.toUpperCase()));
+    const showStatus = (status !== 'idle' || isFaulty) && statusLabel !== '';
 
-        // PREPARE VOTES (Left Side Arc)
-        if (showPrepare) {
-            const maxVotes = needed; // We only care about reaching the threshold visually
-            const progress = Math.min(prepareCount / maxVotes, 1);
-            
-            // Background Arc (Gray) - More subtle
-            drawArc(Math.PI * 0.8, Math.PI * 2.2, 0x334155, 0.3); // Reduced alpha
+    const needed = 2 * f + 1;
+    const radius = isClient ? 28 : 38;
+    
+    // Action Bubble Logic
+    const [bubbleText, setBubbleText] = React.useState<string | null>(null);
+    const bubbleTimerRef = useRef<any>(null);
+    const prevStatusRef = useRef(status);
+    const prevPhaseRef = useRef(phase);
 
-            // Threshold Marker (White tick at 100% of needed)
-            // Since maxVotes = needed, the threshold is at progress = 1.0
-            // But let's show the full capacity (N-1) or just the threshold?
-            // Current logic: maxVotes IS the threshold (needed). So the arc fills up when threshold is met.
-            // That's actually good for beginners: "Fill the bar to win".
-            
-            // Let's add a small tick at the end to signify "Goal"
-            const endAngle = Math.PI * 0.8 + (Math.PI * 1.4);
-            g.lineStyle(2, 0xffffff, 0.5);
-            const r1 = arcRadius - 4;
-            const r2 = arcRadius + 4;
-            g.moveTo(r1 * Math.cos(endAngle), r1 * Math.sin(endAngle));
-            g.lineTo(r2 * Math.cos(endAngle), r2 * Math.sin(endAngle));
-            g.lineStyle(0);
-
-            // Progress Arc (Purple)
-            if (progress > 0) {
-                const start = Math.PI * 0.8;
-                const end = start + (Math.PI * 1.4 * progress);
-                drawArc(start, end, 0xc084fc);
-            }
+    React.useEffect(() => {
+        if (prevStatusRef.current !== status) {
+            if (status === 'proposed') showBubble('New Proposal');
+            if (status === 'prepared') showBubble('Quorum Met! (2f+1)');
+            if (status === 'committed') showBubble('Quorum Met! (2f+1)');
+            prevStatusRef.current = status;
         }
+    }, [status]);
 
-        // COMMIT VOTES (Outer Ring)
-        if (showCommit) {
-            const outerRadius = arcRadius + 8; // Closer spacing
-            const maxVotes = needed;
-            const progress = Math.min(commitCount / maxVotes, 1);
-
-            // Background Arc - More subtle
-            g.lineStyle(arcWidth, 0x334155, 0.3);
-            g.arc(0, 0, outerRadius, Math.PI * 0.8, Math.PI * 2.2);
-            g.lineStyle(0);
-
-            // Threshold Tick
-            const endAngle = Math.PI * 0.8 + (Math.PI * 1.4);
-            g.lineStyle(2, 0xffffff, 0.5);
-            const r1 = outerRadius - 4;
-            const r2 = outerRadius + 4;
-            g.moveTo(r1 * Math.cos(endAngle), r1 * Math.sin(endAngle));
-            g.lineTo(r2 * Math.cos(endAngle), r2 * Math.sin(endAngle));
-            g.lineStyle(0);
-
-            // Progress Arc (Amber)
-            if (progress > 0) {
-                const start = Math.PI * 0.8;
-                const end = start + (Math.PI * 1.4 * progress);
-                g.lineStyle(arcWidth, 0xfacc15);
-                g.arc(0, 0, outerRadius, start, end);
-                g.lineStyle(0);
-            }
+    React.useEffect(() => {
+        if (prevPhaseRef.current !== phase) {
+            if (isLeader && phase === 'pre-prepare') showBubble('Broadcasting Proposal');
+            if (phase === 'reply' && status === 'committed') showBubble('Replying to Client');
+            prevPhaseRef.current = phase;
         }
+    }, [phase, isLeader, status]);
+
+    function showBubble(text: string) {
+        setBubbleText(text);
+        if (bubbleTimerRef.current) clearTimeout(bubbleTimerRef.current);
+        bubbleTimerRef.current = setTimeout(() => setBubbleText(null), 2500);
     }
 
-    function drawStatusBadge(g: any) {
-        // Draw status text badge below the node
-        if (status === 'idle' && !isFaulty) return;
-
-        const config = isFaulty ? { color: 0xf87171, label: 'FAULTY' } : STATUS_CONFIG[status]; // Red-400
-        if (!config || !config.label) return;
-
-        const badgeW = 60;
-        const badgeH = 16;
-        const badgeY = radius + 28; // Position below the label
-
-        // Badge background
-        g.beginFill(config.color);
-        g.drawRoundedRect(-badgeW / 2, badgeY, badgeW, badgeH, 8);
-        g.endFill();
-    }
-
-    function drawGlowEffect(g: any) {
-        // Only show glow on hover or if faulty
-        if (!hovered && !isFaulty) return;
-
-        const pulse = 1 + Math.sin(pulseRef.current) * 0.08;
-        let glowColor = 0xffffff; // Default white glow for hover
-        let glowAlpha = 0.15;
-
-        if (isFaulty) {
-            glowColor = 0xf87171; // Red-400
-            glowAlpha = 0.3;
-        } else if (hovered) {
-            glowColor = 0xffffff;
-            glowAlpha = 0.1;
-        }
-
-        g.beginFill(glowColor, glowAlpha * pulse);
-        g.drawCircle(0, 0, radius + 8 * pulse);
-        g.endFill();
-    }
-
-    function drawMainCircle(g: any) {
-        const fillColor = isFaulty ? 0x991b1b : isLeader ? 0x065f46 : 0x1e293b; // Darker base colors: Red-800, Emerald-800, Slate-800
-        const strokeColor = isFaulty ? 0xf87171 : isLeader ? 0x34d399 : 0x94a3b8; // Brighter strokes: Red-400, Emerald-400, Slate-400
-        const borderWidth = hovered ? 4 : 3;
-
-        // Shadow
-        g.beginFill(0x000000, 0.3);
-        g.drawCircle(4, 4, radius);
-        g.endFill();
-
-        // Main circle
-        g.beginFill(fillColor);
-        g.lineStyle(borderWidth, strokeColor);
-        g.drawCircle(0, 0, radius);
-        g.endFill();
-
-        // Faulty cross
-        if (isFaulty) {
-            g.lineStyle(4, 0xf87171, 0.8);
-            const s = radius * 0.4;
-            g.moveTo(-s, -s);
-            g.lineTo(s, s);
-            g.moveTo(s, -s);
-            g.lineTo(-s, s);
-        }
-    }
-
-    function drawLeaderCrown(g: any) {
-        if (!isLeader) return;
-
-        const crownY = -radius - 18;
-        const crownWidth = 24;
-        const crownHeight = 14;
-
-        // Crown shape
-        g.beginFill(0xfbbf24);
-        g.lineStyle(1, 0xf59e0b);
-        g.moveTo(-crownWidth / 2, crownY + crownHeight);
-        g.lineTo(-crownWidth / 2, crownY + 4);
-        g.lineTo(-crownWidth / 4, crownY + 8);
-        g.lineTo(0, crownY);
-        g.lineTo(crownWidth / 4, crownY + 8);
-        g.lineTo(crownWidth / 2, crownY + 4);
-        g.lineTo(crownWidth / 2, crownY + crownHeight);
-        g.closePath();
-        g.endFill();
-
-        // Crown jewels
-        g.beginFill(0xff0000);
-        g.drawCircle(0, crownY + 4, 2);
-        g.endFill();
-    }
-
+    // Styles
     const textStyle = useMemo(() => new TextStyle({
-        fill: '#ffffff',
-        fontSize: isClient ? 14 : 20, // Increased from 15
+        fill: COLORS.ui.text,
+        fontSize: (isClient ? 14 : 20) * fontScale,
         fontWeight: 'bold',
         align: 'center',
         dropShadow: true,
         dropShadowColor: '#000000',
         dropShadowBlur: 2,
         dropShadowDistance: 1,
-    }), [isClient]);
+    }), [isClient, fontScale]);
 
     const labelStyle = useMemo(() => new TextStyle({
-        fill: '#cbd5e1',
-        fontSize: 11, // Increased from 10
-        fontWeight: 'bold', // Changed to bold
+        fill: COLORS.ui.label,
+        fontSize: 11 * fontScale,
+        fontWeight: 'bold',
         align: 'center',
-    }), []);
+    }), [fontScale]);
 
     const statusStyle = useMemo(() => new TextStyle({
-        fill: '#ffffff',
-        fontSize: 10,
+        fill: COLORS.ui.text,
+        fontSize: 10 * fontScale,
         fontWeight: 'bold',
         align: 'center',
         dropShadow: true,
         dropShadowColor: '#000000',
         dropShadowBlur: 2,
         dropShadowDistance: 1,
-    }), []);
+    }), [fontScale]);
 
-    const bubbleStyle = useMemo(() => new TextStyle({
-        fill: '#0f172a', // Slate-900
-        fontSize: 10,
+    const bubbleTextStyle = useMemo(() => new TextStyle({
+        fill: COLORS.ui.bubbleText,
+        fontSize: 10 * fontScale,
         fontWeight: 'bold',
         align: 'center',
-    }), []);
+    }), [fontScale]);
 
+    // Determine Glow Color
+    let glowColor = 0xffffff;
+    if (isFaulty) glowColor = COLORS.node.faulty;
+    
     return (
         <Container
             x={x}
@@ -373,7 +355,44 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
             onpointerleave={() => onHover(null)}
             cursor="pointer"
         >
-            <Graphics ref={graphicsRef} />
+            {/* 1. Glow (Animated) */}
+            <NodeGlow 
+                active={hovered || isFaulty} 
+                color={glowColor} 
+                radius={radius} 
+            />
+
+            {/* 2. Base Shape (Static) */}
+            <NodeBase 
+                isClient={isClient} 
+                isLeader={isLeader} 
+                isFaulty={isFaulty} 
+                radius={radius} 
+                hovered={hovered}
+            />
+
+            {/* 3. Status & Votes (Dynamic) */}
+            {!isClient && (
+                <NodeStatusOverlay 
+                    radius={radius}
+                    status={status}
+                    isFaulty={isFaulty}
+                    phase={phase}
+                    prepareCount={prepareCount}
+                    commitCount={commitCount}
+                    needed={needed}
+                />
+            )}
+
+            {/* 4. Local Log (Dynamic) */}
+            {!isClient && <NodeLog radius={radius} round={round} />}
+
+            {/* 5. Action Bubble (Dynamic) */}
+            {bubbleText && !isClient && (
+                <ActionBubble text={bubbleText} radius={radius} />
+            )}
+
+            {/* Text Labels */}
             {!isClient && (
                 <Text
                     text={displayId}
@@ -385,14 +404,14 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
             <Text
                 text={displayLabel}
                 anchor={0.5}
-                y={isClient ? radius + 14 : radius + 14}
+                y={radius + 14}
                 style={labelStyle}
             />
             {showStatus && (
                 <Text
-                    text={statusConfig.label}
+                    text={statusLabel}
                     anchor={0.5}
-                    y={radius + 36} // Centered in the badge drawn in drawStatusBadge
+                    y={radius + 36}
                     style={statusStyle}
                 />
             )}
@@ -400,8 +419,8 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
                 <Text
                     text={bubbleText}
                     anchor={0.5}
-                    y={-radius - 35} // Centered in the bubble
-                    style={bubbleStyle}
+                    y={-radius - 35}
+                    style={bubbleTextStyle}
                 />
             )}
         </Container>

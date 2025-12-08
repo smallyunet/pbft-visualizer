@@ -2,6 +2,7 @@ import React, { useMemo, useRef, useCallback } from 'react';
 import { Graphics, Container, Text, useTick } from '@pixi/react';
 import { TextStyle } from 'pixi.js';
 import { usePbftStore, RenderedMessage } from '../store/pbftStore';
+import { getMessageColor } from '../styles/theme';
 
 interface PixiMessageProps {
     message: RenderedMessage;
@@ -12,14 +13,6 @@ interface PixiMessageProps {
     startAt: number;
     duration: number;
 }
-
-const COLORS: Record<string, number> = {
-    'request': 0x94a3b8,     // slate-400
-    'pre-prepare': 0x38bdf8, // sky-400
-    'prepare': 0xc084fc,     // purple-400
-    'commit': 0xfacc15,      // yellow-400
-    'reply': 0x4ade80,       // green-400
-};
 
 const KIND_LABELS: Record<string, string> = {
     'request': 'REQ',
@@ -41,6 +34,7 @@ function easeOutQuad(t: number): number {
 
 export default function PixiMessage({ message, from, to, kind, conflicting, startAt, duration }: PixiMessageProps) {
     const setHoveredMessage = usePbftStore(s => s.setHoveredMessage);
+    const fontScale = usePbftStore(s => s.fontScale);
 
     // Graphics refs
     const pathRef = useRef<any>(null);
@@ -89,7 +83,7 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
         return Math.atan2(dy, dx);
     }, [from.x, from.y, to.x, to.y, controlPoint.x, controlPoint.y]);
 
-    const color = COLORS[kind] ?? 0x64748b;
+    const color = getMessageColor(kind);
     const label = KIND_LABELS[kind] ?? '?';
     const durationMs = duration * 1000;
     const finishedRef = useRef(false);
@@ -305,7 +299,7 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
 
     const labelStyle = useMemo(() => new TextStyle({
         fill: '#ffffff', // White text
-        fontSize: 14,    // Larger font
+        fontSize: 14 * fontScale,    // Larger font
         fontWeight: '900', // Extra bold
         align: 'center',
         stroke: '#000000', // Black outline
@@ -314,7 +308,7 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
         dropShadowColor: '#000000',
         dropShadowBlur: 2,
         dropShadowDistance: 1,
-    }), [conflicting]);
+    }), [conflicting, fontScale]);
 
     return (
         <Container>

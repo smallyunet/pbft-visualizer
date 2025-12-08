@@ -185,6 +185,60 @@ export default function App(): React.ReactElement {
 				)}
 			</AnimatePresence>
 
+			{/* Node Tooltip */}
+			<AnimatePresence>
+				{hoveredNodeId !== null && hoveredNodeId !== -1 && nodeStats[hoveredNodeId] && (
+					<motion.div
+						initial={{ opacity: 0, y: 10 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0, y: 10 }}
+						className="fixed z-50 pointer-events-none bg-white/95 backdrop-blur text-slate-800 p-3 rounded-xl shadow-2xl border border-slate-200 text-xs"
+						style={{
+							left: mousePos.x + 20,
+							top: mousePos.y + 20,
+						}}
+					>
+						<div className="flex items-center gap-2 mb-2 border-b border-slate-100 pb-2">
+							<div className={`w-2 h-2 rounded-full ${nodes[hoveredNodeId].role === 'leader' ? 'bg-emerald-500' : 'bg-blue-500'}`} />
+							<span className="font-bold text-sm">
+								{nodes[hoveredNodeId].role === 'leader' ? 'LEADER' : `REPLICA ${hoveredNodeId}`}
+							</span>
+							{nodes[hoveredNodeId].state === 'faulty' && (
+								<span className="bg-red-100 text-red-600 px-1.5 py-0.5 rounded text-[10px] font-bold">FAULTY</span>
+							)}
+						</div>
+						
+						<div className="space-y-2">
+							<div>
+								<div className="flex justify-between text-[10px] uppercase text-slate-500 font-semibold mb-0.5">
+									<span>Prepare Votes</span>
+									<span>{nodeStats[hoveredNodeId].prepare} / {2 * usePbftStore.getState().f + 1}</span>
+								</div>
+								<div className="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+									<div 
+										className="h-full bg-purple-400 rounded-full transition-all duration-300"
+										style={{ width: `${Math.min(100, (nodeStats[hoveredNodeId].prepare / (2 * usePbftStore.getState().f + 1)) * 100)}%` }}
+									/>
+								</div>
+							</div>
+
+							<div>
+								<div className="flex justify-between text-[10px] uppercase text-slate-500 font-semibold mb-0.5">
+									<span>Commit Votes</span>
+									<span>{nodeStats[hoveredNodeId].commit} / {2 * usePbftStore.getState().f + 1}</span>
+								</div>
+								<div className="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+									<div 
+										className="h-full bg-amber-400 rounded-full transition-all duration-300"
+										style={{ width: `${Math.min(100, (nodeStats[hoveredNodeId].commit / (2 * usePbftStore.getState().f + 1)) * 100)}%` }}
+									/>
+								</div>
+							</div>
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
+
 			{/* Title Overlay (Top Left) */}
 			<div className="absolute top-4 left-4 sm:top-6 sm:left-8 z-10 pointer-events-none">
 				<h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent drop-shadow-sm">

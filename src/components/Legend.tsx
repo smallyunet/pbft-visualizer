@@ -32,6 +32,31 @@ export default function Legend() {
           <div className="w-4 h-4 bg-blue-500 rounded-full border border-white shadow-sm"></div>
           <span className="text-slate-600 text-[11px]">Replica</span>
         </div>
+
+        {/* Vote Progress Indicators */}
+        <div className="col-span-2 mt-2 pt-2 border-t border-slate-100">
+          <div className="text-[9px] uppercase text-slate-400 font-bold mb-1.5">Vote Progress Rings</div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-1.5">
+              <div className="relative w-5 h-5 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="w-full h-full rotate-[-90deg]">
+                  <circle cx="12" cy="12" r="8" fill="none" stroke="#e2e8f0" strokeWidth="3" />
+                  <circle cx="12" cy="12" r="8" fill="none" stroke="#c084fc" strokeWidth="3" strokeDasharray="25 50" />
+                </svg>
+              </div>
+              <span className="text-slate-600 text-[10px]">Prepare (Inner)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <div className="relative w-5 h-5 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="w-full h-full rotate-[-90deg]">
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="#e2e8f0" strokeWidth="3" />
+                  <circle cx="12" cy="12" r="10" fill="none" stroke="#facc15" strokeWidth="3" strokeDasharray="35 60" />
+                </svg>
+              </div>
+              <span className="text-slate-600 text-[10px]">Commit (Outer)</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
