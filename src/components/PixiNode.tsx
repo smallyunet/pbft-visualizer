@@ -47,19 +47,23 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
     const prevPhaseRef = useRef(phase);
 
     // Detect status changes to trigger bubbles
-    if (prevStatusRef.current !== status) {
-        if (status === 'proposed') showBubble('New Proposal');
-        if (status === 'prepared') showBubble('Quorum Met! (2f+1)');
-        if (status === 'committed') showBubble('Quorum Met! (2f+1)');
-        prevStatusRef.current = status;
-    }
+    React.useEffect(() => {
+        if (prevStatusRef.current !== status) {
+            if (status === 'proposed') showBubble('New Proposal');
+            if (status === 'prepared') showBubble('Quorum Met! (2f+1)');
+            if (status === 'committed') showBubble('Quorum Met! (2f+1)');
+            prevStatusRef.current = status;
+        }
+    }, [status]);
 
     // Detect phase changes for Leader actions
-    if (prevPhaseRef.current !== phase) {
-        if (isLeader && phase === 'pre-prepare') showBubble('Broadcasting Proposal');
-        if (phase === 'reply' && status === 'committed') showBubble('Replying to Client');
-        prevPhaseRef.current = phase;
-    }
+    React.useEffect(() => {
+        if (prevPhaseRef.current !== phase) {
+            if (isLeader && phase === 'pre-prepare') showBubble('Broadcasting Proposal');
+            if (phase === 'reply' && status === 'committed') showBubble('Replying to Client');
+            prevPhaseRef.current = phase;
+        }
+    }, [phase, isLeader, status]);
 
     function showBubble(text: string) {
         setBubbleText(text);

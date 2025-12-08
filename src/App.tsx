@@ -18,7 +18,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 
 export default function App(): React.ReactElement {
-	const { nodes, timeline, playing, step, speed, layoutScale, fontScale, sceneKey, hoveredNodeId, setHoveredNodeId, nodeStats, viewMode, hoveredMessage } = usePbftStore(
+	const { nodes, timeline, playing, step, speed, layoutScale, fontScale, sceneKey, hoveredNodeId, setHoveredNodeId, nodeStats, viewMode, hoveredMessage, round } = usePbftStore(
 		(s: PbftState) => ({
 			nodes: s.nodes,
 			timeline: s.timeline,
@@ -33,6 +33,7 @@ export default function App(): React.ReactElement {
 			nodeStats: s.nodeStats,
 			viewMode: s.viewMode,
 			hoveredMessage: s.hoveredMessage,
+			round: s.round,
 		}),
 		shallow
 	);
@@ -104,9 +105,6 @@ export default function App(): React.ReactElement {
 				<CanvasStage width={size.w} height={size.h} className="w-full h-full max-w-[100vw] max-h-[100vh]">
 					<SimulationTicker />
                     
-                    {/* Central Status Announcer */}
-                    <CentralStatus x={center.x} y={center.y} />
-
 					{/* Edges/messages */}
 					{timeline.map((m) => {
 						// Calculate animation duration based on STEP_MS and speed
@@ -152,6 +150,9 @@ export default function App(): React.ReactElement {
 						hovered={hoveredNodeId === -1}
 						onHover={setHoveredNodeId}
 					/>
+
+                    {/* Central Status Announcer - Rendered last to be on top */}
+                    <CentralStatus x={center.x} y={center.y} />
 				</CanvasStage>
 			</div>
 
@@ -193,7 +194,7 @@ export default function App(): React.ReactElement {
 					<span className="px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold tracking-wider uppercase bg-blue-100 text-blue-700 shadow-sm">
 						Phase: {phase}
 					</span>
-					<span className="text-xs sm:text-sm text-slate-500 font-medium">Round {usePbftStore.getState().round}</span>
+					<span className="text-xs sm:text-sm text-slate-500 font-medium">Round {round}</span>
 				</div>
 			</div>
 

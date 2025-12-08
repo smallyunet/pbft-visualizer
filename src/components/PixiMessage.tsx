@@ -92,8 +92,11 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
     const color = COLORS[kind] ?? 0x64748b;
     const label = KIND_LABELS[kind] ?? '?';
     const durationMs = duration * 1000;
+    const finishedRef = useRef(false);
 
     useTick(() => {
+        if (finishedRef.current) return;
+
         const currentTime = usePbftStore.getState().t;
         const age = currentTime - startAt;
         const rawProgress = age / durationMs;
@@ -118,6 +121,7 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
         // Phase 3: Done
         else {
             hideAllElements();
+            finishedRef.current = true;
         }
     });
 

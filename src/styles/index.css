@@ -225,7 +225,7 @@ html {
 }
 
 .panel-title {
-  @apply text-[12px] font-semibold tracking-wide uppercase text-slate-500;
+  @apply text-[12px] font-bold tracking-wide uppercase text-slate-600;
   letter-spacing: 0.05em;
 }
 

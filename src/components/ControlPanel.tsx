@@ -62,7 +62,7 @@ export default function ControlPanel(): React.ReactElement {
           >
             <motion.button
               whileTap={{ scale: 0.95 }}
-              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 ${playing ? 'bg-amber-500/20 text-amber-400 border border-amber-500/50 hover:bg-amber-500/30' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/50 border border-blue-500/50'}`}
+              className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all duration-200 ${playing ? 'bg-amber-100 text-amber-600 border border-amber-200 hover:bg-amber-200' : 'bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20 border border-blue-500/50'}`}
               onClick={() => togglePlay()}
             >
               {playing ? (
@@ -80,7 +80,7 @@ export default function ControlPanel(): React.ReactElement {
 
             <motion.button
               whileTap={{ scale: 0.95 }}
-              className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-all duration-200"
+              className="p-1.5 sm:p-2 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-slate-700 transition-all duration-200"
               onClick={() => step(600)}
               title="Step Forward"
             >
@@ -90,14 +90,14 @@ export default function ControlPanel(): React.ReactElement {
               </svg>
             </motion.button>
 
-            <div className="h-4 sm:h-5 w-px bg-slate-700 mx-0.5 sm:mx-1"></div>
+            <div className="h-4 sm:h-5 w-px bg-slate-200 mx-0.5 sm:mx-1"></div>
 
             <div className="flex flex-col leading-none">
               <span className="text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-wider">Round</span>
-              <span className="text-xs sm:text-sm font-mono font-bold text-slate-300">{round}</span>
+              <span className="text-xs sm:text-sm font-mono font-bold text-slate-700">{round}</span>
             </div>
 
-            <div className="h-4 sm:h-5 w-px bg-slate-700 mx-0.5 sm:mx-1"></div>
+            <div className="h-4 sm:h-5 w-px bg-slate-200 mx-0.5 sm:mx-1"></div>
 
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -125,11 +125,11 @@ export default function ControlPanel(): React.ReactElement {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="flex flex-col gap-4 p-2 max-w-[90vw] w-[800px]"
+            className="flex flex-col gap-4 p-2 max-w-[90vw] w-[800px] text-slate-700"
           >
             {/* Header */}
             <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Configuration Panel</h3>
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">Configuration Panel</h3>
               <button
                 onClick={() => setExpanded(false)}
                 className="p-1.5 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
@@ -141,73 +141,42 @@ export default function ControlPanel(): React.ReactElement {
             </div>
 
             <div className="flex flex-wrap gap-4 justify-center">
-              {/* Execution */}
+              {/* Simulation */}
               <div className="panel-group">
-                <span className="panel-title">Execution</span>
+                <span className="panel-title">Simulation</span>
                 <div className="flex flex-wrap items-center gap-2">
-                  <motion.button whileTap={{ scale: 0.95 }} className="btn-primary" onClick={() => togglePlay()}>{playing ? 'Pause' : 'Play'}</motion.button>
-                  <motion.button whileTap={{ scale: 0.95 }} className="btn-outline" onClick={() => step(600)}>Step</motion.button>
-                  <motion.button whileTap={{ scale: 0.95 }} className="btn-outline" onClick={() => resetPhase()}>Reset phase</motion.button>
-                  <motion.button whileTap={{ scale: 0.95 }} className="btn-outline" onClick={() => resetAll()}>Reset all</motion.button>
-                  <motion.button whileTap={{ scale: 0.95 }} className="btn-outline" onClick={() => skipPhase()}>Skip phase</motion.button>
-                  <div className="flex items-center gap-1 text-[12px] ml-1">
+                  <motion.button whileTap={{ scale: 0.95 }} className="btn-outline" onClick={() => resetAll()}>Reset All</motion.button>
+                  <motion.button whileTap={{ scale: 0.95 }} className="btn-outline" onClick={() => resetPhase()}>Reset Phase</motion.button>
+                  
+                  <div className="w-px h-4 bg-slate-200 mx-1"></div>
+                  
+                  <div className="flex items-center gap-1 text-[12px]">
                     <span>Speed:</span>
-                    <select className="px-2 py-1 rounded bg-slate-100" value={speed} onChange={(e) => setSpeed(parseFloat(e.target.value))}>
+                    <select className="px-2 py-1 rounded bg-slate-100 text-slate-700" value={speed} onChange={(e) => setSpeed(parseFloat(e.target.value))}>
                       <option value={0.5}>0.5x</option>
                       <option value={1}>1x</option>
                       <option value={2}>2x</option>
                       <option value={4}>4x</option>
                     </select>
                   </div>
-                  <label className="flex items-center gap-1 text-xs select-none">
-                    <input type="checkbox" checked={autoAdvance} onChange={(e) => setAutoAdvance(e.target.checked)} /> Auto‑advance
+                  
+                  <label className="flex items-center gap-1 text-xs select-none cursor-pointer ml-2">
+                    <input type="checkbox" checked={autoAdvance} onChange={(e) => setAutoAdvance(e.target.checked)} /> 
+                    Auto‑advance
                   </label>
-                  {autoAdvance && (
-                    <div className="flex items-center gap-1 text-[12px]">
-                      <span>Phase pause:</span>
-                      <select className="px-2 py-1 rounded bg-slate-100" value={phaseDelayMs} onChange={(e) => setPhaseDelay(parseInt(e.target.value, 10))}>
-                        <option value={1000}>1.0s</option>
-                        <option value={2000}>2.0s</option>
-                        <option value={3000}>3.0s</option>
-                        <option value={5000}>5.0s</option>
-                      </select>
-                    </div>
-                  )}
-                  <div className="text-[12px] font-mono flex items-center gap-1 ml-2">
-                    <span>Value:</span>
-                    <motion.span
-                      key={value}
-                      initial={{ scale: 0.85, opacity: 0.4 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ type: 'spring', stiffness: 320, damping: 18 }}
-                      className="value-badge"
-                    >
-                      {value}
-                    </motion.span>
-                    <span>Round={round}</span>
-                  </div>
                 </div>
               </div>
 
-              {/* Phase */}
+              {/* Fault Injection */}
               <div className="panel-group text-sm">
-                <span className="panel-title">Phase</span>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button className={phase === 'pre-prepare' ? 'btn-primary' : 'btn-outline'} onClick={() => setPhase('pre-prepare')}>Pre‑prepare</button>
-                  <button className={phase === 'prepare' ? 'btn-primary' : 'btn-outline'} onClick={() => setPhase('prepare')}>Prepare</button>
-                  <button className={phase === 'commit' ? 'btn-primary' : 'btn-outline'} onClick={() => setPhase('commit')}>Commit</button>
-                </div>
-              </div>
-
-              {/* Fault injection */}
-              <div className="panel-group text-sm">
-                <span className="panel-title">Fault</span>
+                <span className="panel-title">Fault Injection</span>
                 <div className="flex flex-wrap items-center gap-2">
                   {nodes.map((n) => (
                     <button
                       key={n.id}
                       className={n.state === 'faulty' ? 'btn-danger' : 'btn-outline'}
                       onClick={() => toggleFaulty(n.id)}
+                      title="Toggle Faulty State"
                     >
                       {n.role === 'leader' ? 'Leader' : `N${n.id}`}
                     </button>
@@ -215,82 +184,37 @@ export default function ControlPanel(): React.ReactElement {
                 </div>
               </div>
 
-              {/* Boundary parameters */}
+              {/* View Settings */}
               <div className="panel-group text-sm">
-                <span className="panel-title">Parameters</span>
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="text-xs">n = {n}, f = (n − 1) / 3 = {f}, tolerate up to {f} Byzantine nodes</div>
-                </div>
-              </div>
-
-              {/* View preferences */}
-              <div className="panel-group text-sm">
-                <span className="panel-title">View</span>
-                <div className="flex flex-wrap items-center gap-2">
+                <span className="panel-title">View Settings</span>
+                <div className="flex flex-wrap items-center gap-3">
                   <div className="flex items-center gap-1 text-sm">
                     <span>Mode:</span>
                     <select
-                      className="px-2 py-1 rounded bg-slate-100"
+                      className="px-2 py-1 rounded bg-slate-100 text-slate-700"
                       value={viewMode}
                       onChange={(e) => setViewMode(e.target.value as 'radial' | 'linear' | 'vertical' | 'hierarchy')}
                     >
                       <option value="radial">Radial</option>
-                      <option value="linear">Linear (Row)</option>
-                      <option value="vertical">Vertical (Stack)</option>
-                      <option value="hierarchy">Hierarchy (Tree)</option>
+                      <option value="linear">Linear</option>
+                      <option value="vertical">Vertical</option>
+                      <option value="hierarchy">Hierarchy</option>
                     </select>
                   </div>
-                  <label className="flex items-center gap-1 text-sm">
-                    <input type="checkbox" checked={showHistory} onChange={(e) => setShowHistory(e.target.checked)} /> Show all history
-                  </label>
-                  <label className="flex items-center gap-1 text-sm">
-                    <input type="checkbox" checked={focusCurrentPhase} onChange={(e) => setFocusCurrentPhase(e.target.checked)} /> Focus current phase
-                  </label>
-                  <label className="flex items-center gap-1 text-sm">
-                    <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} /> Show labels
-                  </label>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span>Font scale:</span>
-                    <input
-                      type="range"
-                      min={0.8}
-                      max={1.6}
-                      step={0.05}
-                      value={fontScale}
-                      onChange={(e) => setFontScale(parseFloat(e.target.value))}
-                    />
-                    <span className="font-mono">{fontScale.toFixed(2)}x</span>
+                  
+                  <div className="flex items-center gap-3">
+                      <label className="flex items-center gap-1 text-sm cursor-pointer">
+                        <input type="checkbox" checked={showHistory} onChange={(e) => setShowHistory(e.target.checked)} /> History
+                      </label>
+                      <label className="flex items-center gap-1 text-sm cursor-pointer">
+                        <input type="checkbox" checked={focusCurrentPhase} onChange={(e) => setFocusCurrentPhase(e.target.checked)} /> Focus
+                      </label>
+                      <label className="flex items-center gap-1 text-sm cursor-pointer">
+                        <input type="checkbox" checked={showLabels} onChange={(e) => setShowLabels(e.target.checked)} /> Labels
+                      </label>
                   </div>
-                  <div>
-                    <button className="btn-outline" onClick={() => resetViewPrefs()}>Reset view</button>
-                  </div>
-                  {!showHistory && (
-                    <div className="flex items-center gap-1 text-[12px]">
-                      <span>Recent window:</span>
-                      <select
-                        className="px-2 py-1 rounded bg-slate-100"
-                        value={recentWindowMs}
-                        onChange={(e) => setRecentWindowMs(parseInt(e.target.value, 10))}
-                      >
-                        <option value={800}>0.8s</option>
-                        <option value={1600}>1.6s</option>
-                        <option value={2400}>2.4s</option>
-                        <option value={3600}>3.6s</option>
-                      </select>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-2 text-[12px]">
-                    <span>Layout scale:</span>
-                    <input
-                      type="range"
-                      min={0.8}
-                      max={1.6}
-                      step={0.05}
-                      value={layoutScale}
-                      onChange={(e) => setLayoutScale(parseFloat(e.target.value))}
-                    />
-                    <span className="font-mono">{layoutScale.toFixed(2)}x</span>
-                  </div>
+
+                  <button className="text-xs text-slate-400 hover:text-slate-600 underline decoration-slate-300 underline-offset-2 ml-1" onClick={() => resetViewPrefs()}>Reset</button>
                 </div>
               </div>
             </div>
