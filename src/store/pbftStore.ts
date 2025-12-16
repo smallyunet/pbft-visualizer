@@ -1,151 +1,10 @@
 import { create } from 'zustand';
-import type { Phase, Message, Scene } from '../data/phases';
-import { prePrepareScene, prepareScene, commitScene, requestScene, replyScene, NODES, F } from '../data/phases';
-
-export type NodeUi = {
-	id: number;
-	role: 'leader' | 'replica';
-	state: 'normal' | 'faulty';
-};
-
-export type LogEntry = { t: number; text: string };
-
-// Message stored on the timeline with emission time for rendering filters
-export type RenderedMessage = Message & { at: number };
-
-export type PbftState = {
-	// Simulation clock and phase
-	t: number;
-	phaseStart: number; // absolute time when current phase started (keeps global clock monotonic)
-	phase: Phase;
-	playing: boolean;
-	speed: 0.5, // 0.5, 1, 2
-	autoAdvance: boolean; // automatically move to next phase
-	phaseDelayMs: number; // extra pause between phases
-	phaseAdvanceDueAt: number | null; // scheduled time to move to next phase
-
-	// Round/value lifecycle
-	round: number; // 1-based round index
-	value: number; // accumulated result value
-	nextIncrement: number; // current round proposes to add this delta at commit
-	expectedPayload: string; // placeholder replacement for 'v' in messages, e.g. '+1'
-
-	// Derived per-node consensus stats for teaching overlays
-	nodeStats: Array<{
-		prepare: number;
-		commit: number;
-		proposed: boolean;
-		status: 'idle' | 'proposed' | 'prepared' | 'committed';
-	}>;
-
-	// Teaching UI state
-	explanation: string;
-	logs: LogEntry[];
-	timeline: RenderedMessage[];
-	nodes: NodeUi[];
-	client: { x: number; y: number; active: boolean };
-
-	// Parameters (n = 3f + 1)
-	n: number;
-	f: number;
-
-	// Actions
-	setPhase: (p: Phase) => void;
-	resetPhase: () => void;
-	togglePlay: () => void;
-	step: (ms?: number) => void;
-	setSpeed: (s: number) => void;
-	setAutoAdvance: (on: boolean) => void;
-	setPhaseDelay: (ms: number) => void;
-	// Session controls
-	resetAll: () => void;
-	skipPhase: () => void;
-	// Rendering preferences
-	showHistory: boolean;
-	recentWindowMs: number;
-	setShowHistory: (on: boolean) => void;
-	setRecentWindowMs: (ms: number) => void;
-	layoutScale: number; // affects node spacing
-	setLayoutScale: (s: number) => void;
-	// Visual clarity preferences
-	focusCurrentPhase: boolean; // dim non-current-phase messages
-	setFocusCurrentPhase: (on: boolean) => void;
-	showLabels: boolean; // show payload labels on edges without hover
-	setShowLabels: (on: boolean) => void;
-	hoveredNodeId: number | null; // globally hovered node to highlight incident edges
-	setHoveredNodeId: (id: number | null) => void;
-	hoveredMessage: RenderedMessage | null;
-	setHoveredMessage: (m: RenderedMessage | null) => void;
-	// Global font scale (affects rem-based sizes via root font size)
-	fontScale: number;
-	setFontScale: (s: number) => void;
-	// View mode: radial (default), linear (horizontal), vertical (stack), or hierarchy (tree)
-	viewMode: 'radial' | 'linear' | 'vertical' | 'hierarchy';
-	setViewMode: (m: 'radial' | 'linear' | 'vertical' | 'hierarchy') => void;
-	// View preference utilities
-	resetViewPrefs: () => void;
-	// Key to force-remount scene layers (edges/nodes) on hard resets to avoid lingering SVGs
-	sceneKey: number;
-	startNextRound: () => void;
-	toggleFaulty: (id: number) => void;
-};
-
-function sceneOf(p: Phase): Scene {
-	if (p === 'request') return requestScene;
-	if (p === 'pre-prepare') return prePrepareScene;
-	if (p === 'prepare') return prepareScene;
-	if (p === 'commit') return commitScene;
-	return replyScene;
-}
-
-// Persist selected UI preferences to localStorage for better UX across reloads
-type ViewPrefs = {
-	showHistory: boolean;
-	recentWindowMs: number;
-	layoutScale: number;
-	focusCurrentPhase: boolean;
-	showLabels: boolean;
-	fontScale: number;
-	speed: number;
-	autoAdvance: boolean;
-	phaseDelayMs: number;
-	viewMode: 'radial' | 'linear' | 'vertical' | 'hierarchy';
-};
-
-const PERSIST_KEY = 'pbft:viewPrefs:v1';
-
-function loadPrefs(): Partial<ViewPrefs> {
-	if (typeof window === 'undefined') return {};
-	try {
-		const raw = window.localStorage.getItem(PERSIST_KEY);
-		if (!raw) return {};
-		const parsed = JSON.parse(raw) as Partial<ViewPrefs>;
-		return parsed ?? {};
-	} catch {
-		return {};
-	}
-}
-
-function savePrefs(s: Pick<PbftState, keyof ViewPrefs>): void {
-	if (typeof window === 'undefined') return;
-	try {
-		const payload: ViewPrefs = {
-			showHistory: s.showHistory,
-			recentWindowMs: s.recentWindowMs,
-			layoutScale: s.layoutScale,
-			focusCurrentPhase: s.focusCurrentPhase,
-			showLabels: s.showLabels,
-			fontScale: s.fontScale,
-			speed: s.speed,
-			autoAdvance: s.autoAdvance,
-			phaseDelayMs: s.phaseDelayMs,
-			viewMode: s.viewMode,
-		};
-		window.localStorage.setItem(PERSIST_KEY, JSON.stringify(payload));
-	} catch {
-		// Ignore persistence failures silently; UX-only enhancement.
-	}
-}
+import type { Phase, Message } from '../data/phases';
+import { NODES, F } from '../data/phases';
+import type { PbftState, NodeUi, RenderedMessage } from './types';
+export type { PbftState, NodeUi, RenderedMessage };
+import { loadPrefs, savePrefs } from './persistence';
+import { sceneOf, label, computeNodeStats } from './utils';
 
 export const usePbftStore = create<PbftState>((set, get) => {
 	const initialPhase: Phase = 'request';
@@ -193,6 +52,21 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		fontScale: pref.fontScale ?? 1.2,
 		viewMode: pref.viewMode ?? 'radial',
 		sceneKey: 0,
+		manualMode: pref.manualMode ?? false,
+		jitter: pref.jitter ?? 0,
+
+		setManualMode: (m) => {
+			set({ manualMode: m });
+			savePrefs(get());
+		},
+		setJitter: (j) => {
+			set({ jitter: j });
+			savePrefs(get());
+		},
+		triggerRequest: () => {
+			// User clicks "Send Request" -> startNextRound().
+			get().startNextRound();
+		},
 
 		setPhase: (p) => {
 			const scene = sceneOf(p);
@@ -334,11 +208,14 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				const annotated = due.map((m) => {
 					const fromNode = m.from >= 0 ? nodes[m.from] : undefined;
 					const basePayload = m.payload === 'v' ? expectedPayload : m.payload;
+					// Add network jitter to delivery time
+					const deliveryTime = next + Math.random() * get().jitter;
+
 					if (fromNode?.state === 'faulty') {
 						// Different payload to illustrate Byzantine divergence.
-						return { ...m, conflicting: true, payload: `${basePayload}*`, at: next } as RenderedMessage;
+						return { ...m, conflicting: true, payload: `${basePayload}*`, at: deliveryTime } as RenderedMessage;
 					}
-					return { ...m, payload: basePayload, at: next } as RenderedMessage;
+					return { ...m, payload: basePayload, at: deliveryTime } as RenderedMessage;
 				});
 
 				// Group logs by kind to reduce noise.
@@ -405,7 +282,19 @@ export const usePbftStore = create<PbftState>((set, get) => {
 							phaseAdvanceDueAt: due,
 						}));
 					} else if (next >= phaseAdvanceDueAt) {
-						get().startNextRound();
+						if (get().manualMode) {
+							// In manual mode, we do NOT auto-start the next round.
+							// Just clear the due time so we remain in "Waiting" state effectively.
+							// But we need to make sure we don't spam logs.
+							if (get().phaseAdvanceDueAt !== null) {
+								set((s) => ({
+									phaseAdvanceDueAt: null, // Clear timer
+									logs: [...s.logs, { t: next, text: `... Waiting for Client Request (Manual Mode)` }],
+								}));
+							}
+						} else {
+							get().startNextRound();
+						}
 					}
 				} else if (phaseAdvanceDueAt == null) {
 					// Schedule the phase change after a pause
@@ -482,6 +371,8 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				autoAdvance: true,
 				phaseDelayMs: 2000,
 				viewMode: 'radial',
+				manualMode: false,
+				jitter: 0,
 			});
 			savePrefs(get());
 		},
@@ -539,54 +430,3 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		},
 	};
 });
-
-function label(k: Message['kind']): string {
-	if (k === 'request') return '[REQUEST]';
-	if (k === 'pre-prepare') return '[PRE-PREPARE]';
-	if (k === 'prepare') return '[PREPARE]';
-	if (k === 'commit') return '[COMMIT]';
-	return '[REPLY]';
-}
-
-function desc(m: Message): string {
-	const tag = m.conflicting ? ' (conflict)' : '';
-	return `n${m.from} -> n${m.to} payload=${m.payload}${tag}`;
-}
-
-function computeNodeStats(s: Pick<PbftState, 'timeline' | 'expectedPayload' | 'phase' | 'f' | 'n'>): Array<{ prepare: number; commit: number; proposed: boolean; status: 'idle' | 'proposed' | 'prepared' | 'committed' }> {
-	const needed = 2 * s.f + 1;
-	type Stat = { prepare: number; commit: number; proposed: boolean; status: 'idle' | 'proposed' | 'prepared' | 'committed' };
-	const stats: Stat[] = Array.from({ length: s.n }, () => ({ prepare: 0, commit: 0, proposed: false, status: 'idle' }));
-	// Each node counts its own PREPARE/COMMIT vote once it broadcasts (PBFT counts local vote).
-	const selfPrepare = new Set<number>();
-	const selfCommit = new Set<number>();
-	// Leader originates the value so it is already "proposed" even without a self-addressed PRE-PREPARE.
-	if (stats.length > 0) stats[0].proposed = true;
-	const ok = s.expectedPayload;
-	s.timeline.forEach((m) => {
-		const to = m.to;
-		if (to == null || to < 0 || to >= s.n) return;
-		if (m.kind === 'pre-prepare' && !m.conflicting && (m.payload === ok)) stats[to].proposed = true;
-		if (m.kind === 'prepare' && !m.conflicting && m.payload === ok) {
-			stats[to].prepare += 1;
-			if (m.from >= 0 && m.from < s.n) {
-				selfPrepare.add(m.from);
-				stats[m.from].proposed = true;
-			}
-		}
-		if (m.kind === 'commit' && !m.conflicting && m.payload === ok) {
-			stats[to].commit += 1;
-			if (m.from >= 0 && m.from < s.n) selfCommit.add(m.from);
-		}
-	});
-	selfPrepare.forEach((id) => { stats[id].prepare += 1; });
-	selfCommit.forEach((id) => { stats[id].commit += 1; });
-	for (let i = 0; i < stats.length; i++) {
-		const st = stats[i];
-		if (s.phase === 'reply') st.status = 'committed';
-		else if (s.phase === 'commit') st.status = st.commit >= needed ? 'committed' : st.prepare >= needed ? 'prepared' : st.proposed ? 'proposed' : 'idle';
-		else if (s.phase === 'prepare') st.status = st.prepare >= needed ? 'prepared' : st.proposed ? 'proposed' : 'idle';
-		else st.status = st.proposed ? 'proposed' : 'idle';
-	}
-	return stats;
-}
