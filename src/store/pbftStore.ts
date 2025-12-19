@@ -21,6 +21,8 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		phaseDelayMs: pref.phaseDelayMs ?? 2000,
 		phaseAdvanceDueAt: null,
 
+		view: pref.view ?? 0,
+		leaderId: pref.leaderId ?? 0,
 		round: 1,
 		value: 0,
 		nextIncrement: 1,
@@ -68,8 +70,38 @@ export const usePbftStore = create<PbftState>((set, get) => {
 			get().startNextRound();
 		},
 
+		rotateLeader: () => {
+			const { view, n } = get();
+			const nextView = view + 1;
+			const nextLeader = nextView % n;
+			set((s) => ({
+				view: nextView,
+				leaderId: nextLeader,
+				logs: [...s.logs, { t: s.t, text: `!!! VIEW CHANGE: View ${nextView}, New Leader n${nextLeader}` }],
+				nodes: s.nodes.map((n) => ({
+					...n,
+					role: n.id === nextLeader ? 'leader' : 'replica',
+				})),
+				nodeStats: computeNodeStats({ ...get(), leaderId: nextLeader }),
+			}));
+			savePrefs(get());
+		},
+
+		dropMessage: (messageId) => {
+			const { timeline, logs, t } = get();
+			const filtered = timeline.filter((m) => m.id !== messageId);
+			if (filtered.length !== timeline.length) {
+				set({
+					timeline: filtered,
+					logs: [...logs, { t, text: `--- Message ${messageId} dropped by user` }],
+					nodeStats: computeNodeStats({ ...get(), timeline: filtered }),
+				});
+			}
+		},
+
 		setPhase: (p) => {
-			const scene = sceneOf(p);
+			const { leaderId } = get();
+			const scene = sceneOf(p, leaderId);
 			set({
 				phase: p,
 				phaseStart: get().t,
@@ -82,15 +114,16 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		},
 
 		resetPhase: () => {
-			const { phase } = get();
-			const scene = sceneOf(phase);
+			const { phase, leaderId } = get();
+			const scene = sceneOf(phase, leaderId);
 			const now = get().t;
 			set({ phaseStart: now, t: now, timeline: [], playing: false, explanation: scene.steps[0]?.narration ?? '', logs: [], phaseAdvanceDueAt: null, sceneKey: get().sceneKey + 1, hoveredNodeId: null, nodeStats: [] });
 		},
 
 		// Reset everything to round 1 and initial phase, preserving node fault selections for experimentation
 		resetAll: () => {
-			const scene = sceneOf('request');
+			const { leaderId } = get();
+			const scene = sceneOf('request', leaderId);
 			set({
 				t: 0,
 				phaseStart: 0,
@@ -114,7 +147,8 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		skipPhase: () => {
 			const { phase, value, nextIncrement, round } = get();
 			if (phase === 'request') {
-				const ns = sceneOf('pre-prepare');
+				const { leaderId } = get();
+				const ns = sceneOf('pre-prepare', leaderId);
 				const now = get().t;
 				set((s) => ({
 					phase: 'pre-prepare',
@@ -128,7 +162,8 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				return;
 			}
 			if (phase === 'pre-prepare') {
-				const ns = sceneOf('prepare');
+				const { leaderId } = get();
+				const ns = sceneOf('prepare', leaderId);
 				const now = get().t;
 				set((s) => ({
 					phase: 'prepare',
@@ -142,7 +177,8 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				return;
 			}
 			if (phase === 'prepare') {
-				const ns = sceneOf('commit');
+				const { leaderId } = get();
+				const ns = sceneOf('commit', leaderId);
 				const now = get().t;
 				set((s) => ({
 					phase: 'commit',
@@ -156,7 +192,8 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				return;
 			}
 			if (phase === 'commit') {
-				const ns = sceneOf('reply');
+				const { leaderId } = get();
+				const ns = sceneOf('reply', leaderId);
 				const now = get().t;
 				set((s) => ({
 					phase: 'reply',
@@ -184,9 +221,9 @@ export const usePbftStore = create<PbftState>((set, get) => {
 		togglePlay: () => set((s) => ({ playing: !s.playing })),
 
 		step: (ms = 300) => {
-			const { t, phase, autoAdvance, phaseAdvanceDueAt, phaseDelayMs, expectedPayload, phaseStart } = get();
+			const { t, phase, autoAdvance, phaseAdvanceDueAt, phaseDelayMs, expectedPayload, phaseStart, leaderId } = get();
 			const next = t + ms;
-			const scene = sceneOf(phase);
+			const scene = sceneOf(phase, leaderId);
 			const windowStart = t - phaseStart;
 			const windowEnd = next - phaseStart;
 
@@ -304,7 +341,8 @@ export const usePbftStore = create<PbftState>((set, get) => {
 						logs: [...s.logs, { t: next, text: `... Waiting ${(phaseDelayMs / 1000).toFixed(1)}s before next phase (${np})` }],
 					}));
 				} else if (next >= phaseAdvanceDueAt) {
-					const ns = sceneOf(np);
+					const { leaderId } = get();
+					const ns = sceneOf(np, leaderId);
 					set((s) => ({
 						phase: np,
 						phaseStart: next,
@@ -373,16 +411,18 @@ export const usePbftStore = create<PbftState>((set, get) => {
 				viewMode: 'radial',
 				manualMode: false,
 				jitter: 0,
+				view: 0,
+				leaderId: 0,
 			});
 			savePrefs(get());
 		},
 
 		startNextRound: () => {
-			const { nextIncrement, round, t } = get();
+			const { nextIncrement, round, t, leaderId } = get();
 			const newIncrement = nextIncrement + 1;
 			const newRound = round + 1;
 			const newExpected = `+${newIncrement}`;
-			const scene = sceneOf('request');
+			const scene = sceneOf('request', leaderId);
 			set((s) => ({
 				round: newRound,
 				nextIncrement: newIncrement,

@@ -23,6 +23,8 @@ export type PbftState = {
     phaseAdvanceDueAt: number | null; // scheduled time to move to next phase
 
     // Round/value lifecycle
+    view: number; // current view number
+    leaderId: number; // view % n
     round: number; // 1-based round index
     value: number; // accumulated result value
     nextIncrement: number; // current round proposes to add this delta at commit
@@ -93,6 +95,8 @@ export type PbftState = {
     setManualMode: (m: boolean) => void;
     setJitter: (j: number) => void;
     triggerRequest: () => void;
+    rotateLeader: () => void;
+    dropMessage: (messageId: string) => void;
 };
 
 // Persist selected UI preferences to localStorage for better UX across reloads
@@ -109,4 +113,6 @@ export type ViewPrefs = {
     viewMode: 'radial' | 'linear' | 'vertical' | 'hierarchy';
     manualMode: boolean;
     jitter: number;
+    view: number;
+    leaderId: number;
 };

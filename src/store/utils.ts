@@ -1,13 +1,29 @@
-import type { Phase, Message, Scene } from '../data/phases';
-import { prePrepareScene, prepareScene, commitScene, requestScene, replyScene } from '../data/phases';
+import type { Phase, Message, Scene, SceneStep } from '../data/phases';
+import { prePrepareScene, prepareScene, commitScene, requestScene, replyScene, NODES } from '../data/phases';
 import type { PbftState, RenderedMessage } from './types';
 
-export function sceneOf(p: Phase): Scene {
-    if (p === 'request') return requestScene;
-    if (p === 'pre-prepare') return prePrepareScene;
-    if (p === 'prepare') return prepareScene;
-    if (p === 'commit') return commitScene;
-    return replyScene;
+export function sceneOf(p: Phase, leaderId: number = 0): Scene {
+    let baseScene: Scene;
+    if (p === 'request') baseScene = requestScene;
+    else if (p === 'pre-prepare') baseScene = prePrepareScene;
+    else if (p === 'prepare') baseScene = prepareScene;
+    else if (p === 'commit') baseScene = commitScene;
+    else baseScene = replyScene;
+
+    if (leaderId === 0) return baseScene;
+
+    // Map node IDs: i -> (i + leaderId) % NODES
+    return {
+        ...baseScene,
+        steps: baseScene.steps.map((step: SceneStep) => ({
+            ...step,
+            messages: step.messages.map((m: Message) => ({
+                ...m,
+                from: m.from >= 0 ? (m.from + leaderId) % NODES : m.from,
+                to: m.to >= 0 ? (m.to + leaderId) % NODES : m.to,
+            }))
+        }))
+    };
 }
 
 export function label(k: Message['kind']): string {
@@ -23,7 +39,7 @@ export function desc(m: Message): string {
     return `n${m.from} -> n${m.to} payload=${m.payload}${tag}`;
 }
 
-export function computeNodeStats(s: Pick<PbftState, 'timeline' | 'expectedPayload' | 'phase' | 'f' | 'n'>): Array<{ prepare: number; commit: number; proposed: boolean; status: 'idle' | 'proposed' | 'prepared' | 'committed' }> {
+export function computeNodeStats(s: Pick<PbftState, 'timeline' | 'expectedPayload' | 'phase' | 'f' | 'n' | 'leaderId'>): Array<{ prepare: number; commit: number; proposed: boolean; status: 'idle' | 'proposed' | 'prepared' | 'committed' }> {
     const needed = 2 * s.f + 1;
     type Stat = { prepare: number; commit: number; proposed: boolean; status: 'idle' | 'proposed' | 'prepared' | 'committed' };
     const stats: Stat[] = Array.from({ length: s.n }, () => ({ prepare: 0, commit: 0, proposed: false, status: 'idle' }));
@@ -31,7 +47,7 @@ export function computeNodeStats(s: Pick<PbftState, 'timeline' | 'expectedPayloa
     const selfPrepare = new Set<number>();
     const selfCommit = new Set<number>();
     // Leader originates the value so it is already "proposed" even without a self-addressed PRE-PREPARE.
-    if (stats.length > 0) stats[0].proposed = true;
+    if (stats.length > s.leaderId) stats[s.leaderId].proposed = true;
     const ok = s.expectedPayload;
     s.timeline.forEach((m) => {
         const to = m.to;

@@ -4,7 +4,10 @@ Interactive teaching tool for the PBFT (Practical Byzantine Fault Tolerance) pro
 
 ### Features
 
-- Animated SVG messages with Framer Motion.
+- View Change support (Leader Rotation) to demonstrate protocol resilience and view transitions.
+- Interactive message dropping: Click in-flight messages to "lose" them and observe impact on consensus.
+- Detailed node statistics and leader identification.
+- Animated SVG/Pixi messages with Framer Motion and PixiJS.
 - Faulty node toggling (marks outgoing non-commit messages as conflicting).
 - Automatic phase progression (toggle Auto‑advance).
 - Adjustable playback speed and manual stepping.

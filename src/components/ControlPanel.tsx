@@ -7,7 +7,7 @@ import { shallow } from 'zustand/shallow';
 export default function ControlPanel(): React.ReactElement {
   const [expanded, setExpanded] = useState(false);
 
-  const { phase, setPhase, resetPhase, resetAll, skipPhase, playing, togglePlay, step, speed, setSpeed, nodes, toggleFaulty, n, f, autoAdvance, setAutoAdvance, phaseDelayMs, setPhaseDelay, round, value, showHistory, setShowHistory, recentWindowMs, setRecentWindowMs, layoutScale, setLayoutScale, focusCurrentPhase, setFocusCurrentPhase, showLabels, setShowLabels, fontScale, setFontScale, resetViewPrefs, viewMode, setViewMode, manualMode, setManualMode, jitter, setJitter, triggerRequest } = usePbftStore(
+  const { phase, setPhase, resetPhase, resetAll, skipPhase, playing, togglePlay, step, speed, setSpeed, nodes, toggleFaulty, n, f, autoAdvance, setAutoAdvance, phaseDelayMs, setPhaseDelay, round, value, showHistory, setShowHistory, recentWindowMs, setRecentWindowMs, layoutScale, setLayoutScale, focusCurrentPhase, setFocusCurrentPhase, showLabels, setShowLabels, fontScale, setFontScale, resetViewPrefs, viewMode, setViewMode, manualMode, setManualMode, jitter, setJitter, triggerRequest, view, rotateLeader } = usePbftStore(
     (s) => ({
       phase: s.phase,
       setPhase: s.setPhase,
@@ -49,6 +49,8 @@ export default function ControlPanel(): React.ReactElement {
       jitter: s.jitter,
       setJitter: s.setJitter,
       triggerRequest: s.triggerRequest,
+      view: s.view,
+      rotateLeader: s.rotateLeader,
     }),
     shallow
   );
@@ -119,6 +121,13 @@ export default function ControlPanel(): React.ReactElement {
 
             <div className="h-4 sm:h-5 w-px bg-slate-200 mx-0.5 sm:mx-1"></div>
 
+            <div className="flex flex-col leading-none">
+              <span className="text-[9px] sm:text-[10px] text-slate-500 font-bold uppercase tracking-wider">View</span>
+              <span className="text-xs sm:text-sm font-mono font-bold text-slate-700">{view}</span>
+            </div>
+
+            <div className="h-4 sm:h-5 w-px bg-slate-200 mx-0.5 sm:mx-1"></div>
+
             <motion.button
               whileTap={{ scale: 0.95 }}
               className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg hover:bg-slate-100 text-slate-600 transition-all duration-200 text-xs sm:text-sm font-medium"
@@ -167,6 +176,7 @@ export default function ControlPanel(): React.ReactElement {
                 <div className="flex flex-wrap items-center gap-2">
                   <motion.button whileTap={{ scale: 0.95 }} className="btn-outline" onClick={() => resetAll()}>Reset All</motion.button>
                   <motion.button whileTap={{ scale: 0.95 }} className="btn-outline" onClick={() => resetPhase()}>Reset Phase</motion.button>
+                  <motion.button whileTap={{ scale: 0.95 }} className="btn-outline border-amber-300 text-amber-700 hover:bg-amber-50" onClick={() => rotateLeader()}>Rotate Leader</motion.button>
 
                   <div className="w-px h-4 bg-slate-200 mx-1"></div>
 

@@ -33,8 +33,13 @@ function easeOutQuad(t: number): number {
 }
 
 export default function PixiMessage({ message, from, to, kind, conflicting, startAt, duration }: PixiMessageProps) {
-    const setHoveredMessage = usePbftStore(s => s.setHoveredMessage);
-    const fontScale = usePbftStore(s => s.fontScale);
+    const { setHoveredMessage, fontScale, dropMessage } = usePbftStore(
+        s => ({
+            setHoveredMessage: s.setHoveredMessage,
+            fontScale: s.fontScale,
+            dropMessage: s.dropMessage
+        })
+    );
 
     // Graphics refs
     const pathRef = useRef<any>(null);
@@ -54,12 +59,12 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
 
         const nx = -dy / norm;
         const ny = dx / norm;
-        
+
         // Add randomness based on message ID hash to prevent overlap
         // Simple hash from string id
         const hash = message.id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
         const offset = (hash % 30) - 15; // Reduced variation for cleaner look
-        
+
         const curve = 40 + offset; // Reduced curve magnitude
 
         return { x: mx + nx * curve, y: my + ny * curve };
@@ -320,9 +325,10 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
             <Graphics
                 ref={hitAreaRef}
                 eventMode="static"
-                cursor="help"
+                cursor="pointer"
                 onpointerenter={() => setHoveredMessage(message)}
                 onpointerleave={() => setHoveredMessage(null)}
+                onpointertap={() => dropMessage(message.id)}
             />
         </Container>
     );

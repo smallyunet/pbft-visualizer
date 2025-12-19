@@ -30,6 +30,8 @@ export function savePrefs(s: Pick<PbftState, keyof ViewPrefs>): void {
             viewMode: s.viewMode,
             manualMode: s.manualMode,
             jitter: s.jitter,
+            view: s.view,
+            leaderId: s.leaderId,
         };
         window.localStorage.setItem(PERSIST_KEY, JSON.stringify(payload));
     } catch {
