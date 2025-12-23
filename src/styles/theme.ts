@@ -4,48 +4,48 @@
 export const COLORS = {
     // Node Colors
     node: {
-        idle: 0x475569,      // slate-600
-        leader: 0x16a34a,    // green-600
-        faulty: 0xdc2626,    // red-600
-        client: 0x334155,    // slate-700
-        clientBorder: 0x94a3b8, // slate-400
+        idle: 0x1e293b,      // slate-800
+        leader: 0x10b981,    // emerald-500
+        faulty: 0xef4444,    // red-500
+        client: 0x6366f1,    // indigo-500
+        clientBorder: 0x818cf8, // indigo-400
     },
     
     // Node Strokes (Brighter versions)
     stroke: {
-        idle: 0x94a3b8,      // slate-400
+        idle: 0x334155,      // slate-700
         leader: 0x34d399,    // emerald-400
         faulty: 0xf87171,    // red-400
-        normal: 0x94a3b8,    // slate-400
+        normal: 0x475569,    // slate-600
     },
 
     // Status/Phase Colors
     status: {
-        proposed: 0x38bdf8,  // sky-400
-        prepared: 0xc084fc,  // purple-400
-        committed: 0xfacc15, // yellow-400
-        reply: 0x4ade80,     // green-400
+        proposed: 0x0ea5e9,  // sky-500
+        prepared: 0x8b5cf6,  // violet-500
+        committed: 0xf59e0b, // amber-500
+        reply: 0x10b981,     // emerald-500
         viewChange: 0xf97316, // orange-500
     },
 
     // Message Colors
     message: {
-        request: 0x94a3b8,    // slate-400
-        prePrepare: 0x38bdf8, // sky-400
-        prepare: 0xc084fc,    // purple-400
-        commit: 0xfacc15,     // yellow-400
-        reply: 0x4ade80,      // green-400
+        request: 0x6366f1,    // indigo-500
+        prePrepare: 0x0ea5e9, // sky-500
+        prepare: 0x8b5cf6,    // violet-500
+        commit: 0xf59e0b,     // amber-500
+        reply: 0x10b981,      // emerald-500
     },
 
     // UI Elements
     ui: {
         text: 0xffffff,
-        label: 0xcbd5e1,      // slate-300
-        bubbleBg: 0xffffff,
-        bubbleText: 0x0f172a, // slate-900
-        bubbleBorder: 0xcbd5e1, // slate-300
-        voteSlotBg: 0x334155, // slate-700
-        voteSlotThreshold: 0xffffff,
+        label: 0x94a3b8,      // slate-400
+        bubbleBg: 0x0f172a,   // slate-900 (darker)
+        bubbleText: 0xffffff, // white text on dark bubble
+        bubbleBorder: 0x1e293b, // slate-800
+        voteSlotBg: 0x0f172a,   // slate-900
+        voteSlotThreshold: 0x334155, // slate-700
     }
 };
 

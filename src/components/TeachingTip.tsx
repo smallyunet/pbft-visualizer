@@ -96,59 +96,63 @@ export default function TeachingTip(): React.ReactElement | null {
         <AnimatePresence mode="wait">
             <motion.div
                 key={`${phase}-${tipIndex}`}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                transition={{ duration: 0.3 }}
-                className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-2xl border border-slate-700 p-4 max-w-xs"
+                initial={{ opacity: 0, x: -20, scale: 0.9 }}
+                animate={{ opacity: 1, x: 0, scale: 1 }}
+                exit={{ opacity: 0, x: -20, scale: 0.9 }}
+                transition={{ duration: 0.4, type: "spring", damping: 25 }}
+                className="bg-slate-900/40 backdrop-blur-xl rounded-[2rem] shadow-4xl border border-white/10 p-6 max-w-xs relative overflow-hidden group/tip"
             >
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent opacity-50" />
+
                 {/* Header */}
-                <div className="flex items-start justify-between gap-2 mb-2">
-                    <div className="flex items-center gap-2">
-                        <span className="text-2xl">{currentTip.icon}</span>
-                        <h3 className="text-white font-bold text-sm">{currentTip.title}</h3>
+                <div className="relative flex items-center justify-between gap-3 mb-4">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-2xl bg-white/5 flex items-center justify-center text-2xl shadow-inner border border-white/5 group-hover/tip:scale-110 transition-transform duration-500">
+                            {currentTip.icon}
+                        </div>
+                        <h3 className="text-white font-black text-sm tracking-tight italic uppercase">{currentTip.title}</h3>
                     </div>
                     <button
                         onClick={() => setDismissed(true)}
-                        className="text-slate-500 hover:text-slate-300 text-xs"
+                        className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-slate-500 hover:text-white transition-all duration-300"
                     >
                         ✕
                     </button>
                 </div>
 
                 {/* Content */}
-                <p className="text-slate-300 text-xs leading-relaxed">
+                <p className="relative text-slate-400 text-[13px] leading-relaxed font-medium">
                     {currentTip.content}
                 </p>
 
                 {/* Pagination */}
                 {tips.length > 1 && (
-                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-700">
-                        <div className="flex gap-1">
+                    <div className="relative flex items-center justify-between mt-6 pt-4 border-t border-white/5">
+                        <div className="flex gap-1.5">
                             {tips.map((_, i) => (
                                 <button
                                     key={i}
                                     onClick={() => setTipIndex(i)}
-                                    className={`w-2 h-2 rounded-full transition-colors ${i === tipIndex ? 'bg-blue-500' : 'bg-slate-600 hover:bg-slate-500'
+                                    className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${i === tipIndex ? 'bg-indigo-400 w-4 shadow-[0_0_8px_rgba(129,140,248,0.5)]' : 'bg-slate-700 hover:bg-slate-600'
                                         }`}
                                 />
                             ))}
                         </div>
-                        <div className="flex gap-1">
+                        <div className="flex gap-2">
                             {tipIndex > 0 && (
                                 <button
                                     onClick={() => setTipIndex(tipIndex - 1)}
-                                    className="text-xs text-slate-400 hover:text-white px-2"
+                                    className="text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-white transition-colors"
                                 >
-                                    ← Prev
+                                    Prev
                                 </button>
                             )}
                             {tipIndex < tips.length - 1 && (
                                 <button
                                     onClick={() => setTipIndex(tipIndex + 1)}
-                                    className="text-xs text-blue-400 hover:text-blue-300 px-2"
+                                    className="text-[10px] font-black uppercase tracking-widest text-indigo-400 hover:text-indigo-300 transition-colors"
                                 >
-                                    Next →
+                                    Next
                                 </button>
                             )}
                         </div>

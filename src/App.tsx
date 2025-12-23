@@ -42,15 +42,15 @@ export default function App(): React.ReactElement {
 
 	// Timer loop removed in favor of SimulationTicker inside CanvasStage
 
-    const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
+	const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
-    useEffect(() => {
-        const handleResize = () => {
-            setSize({ w: window.innerWidth, h: window.innerHeight });
-        };
-        window.addEventListener('resize', handleResize);
-        return () => window.removeEventListener('resize', handleResize);
-    }, []);
+	useEffect(() => {
+		const handleResize = () => {
+			setSize({ w: window.innerWidth, h: window.innerHeight });
+		};
+		window.addEventListener('resize', handleResize);
+		return () => window.removeEventListener('resize', handleResize);
+	}, []);
 
 	const center = { x: size.w / 2, y: size.h / 2 };
 
@@ -99,12 +99,15 @@ export default function App(): React.ReactElement {
 	}, []);
 
 	return (
-		<div className="min-h-screen bg-slate-950 overflow-hidden font-sans text-slate-200" style={{ fontSize: `${fontScale * 16}px` }}>
+		<div className="min-h-screen bg-slate-950 overflow-hidden font-sans text-slate-200 selection:bg-indigo-500/30" style={{ fontSize: `${fontScale * 16}px` }}>
 			{/* Main Canvas Area - Full Screen */}
-			<div className="absolute inset-0 z-0 flex items-center justify-center bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-slate-800 via-slate-950 to-black">
+			<div className="absolute inset-0 z-0 flex items-center justify-center bg-[#020617]">
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(30,58,138,0.2),_transparent_70%)]" />
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,_rgba(79,70,229,0.1),_transparent_50%)]" />
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,_rgba(147,51,234,0.1),_transparent_50%)]" />
 				<CanvasStage width={size.w} height={size.h} className="w-full h-full max-w-[100vw] max-h-[100vh]">
 					<SimulationTicker />
-                    
+
 					{/* Edges/messages */}
 					{timeline.map((m) => {
 						// Calculate animation duration based on STEP_MS and speed
@@ -151,8 +154,8 @@ export default function App(): React.ReactElement {
 						onHover={setHoveredNodeId}
 					/>
 
-                    {/* Central Status Announcer - Rendered last to be on top */}
-                    <CentralStatus x={center.x} y={center.y} />
+					{/* Central Status Announcer - Rendered last to be on top */}
+					<CentralStatus x={center.x} y={center.y} />
 				</CanvasStage>
 			</div>
 
@@ -163,22 +166,28 @@ export default function App(): React.ReactElement {
 						initial={{ opacity: 0, scale: 0.9 }}
 						animate={{ opacity: 1, scale: 1 }}
 						exit={{ opacity: 0, scale: 0.9 }}
-						className="fixed z-50 pointer-events-none bg-slate-900/90 backdrop-blur text-white p-3 rounded-lg shadow-xl border border-slate-700 text-xs font-mono"
+						className="fixed z-50 pointer-events-none bg-slate-900/40 backdrop-blur-xl text-white p-4 rounded-2xl shadow-2xl border border-white/10 text-xs font-mono"
 						style={{
 							left: mousePos.x + 15,
 							top: mousePos.y + 15,
 						}}
 					>
-						<div className="font-bold text-blue-400 mb-1 uppercase">{hoveredMessage.kind}</div>
-						<div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-							<span className="text-slate-400">From:</span>
-							<span>{hoveredMessage.from === -1 ? 'Client' : `Node ${hoveredMessage.from}`}</span>
-							<span className="text-slate-400">To:</span>
-							<span>{hoveredMessage.to === -1 ? 'Client' : `Node ${hoveredMessage.to}`}</span>
-							<span className="text-slate-400">Payload:</span>
-							<span className="text-amber-300">{hoveredMessage.payload}</span>
+						<div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-2xl" />
+						<div className="relative font-bold text-indigo-400 mb-2 tracking-widest uppercase flex items-center gap-2">
+							<div className="w-1 h-3 bg-indigo-500 rounded-full" />
+							{hoveredMessage.kind}
+						</div>
+						<div className="relative grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 mt-2">
+							<span className="text-slate-500 font-semibold">Source</span>
+							<span className="text-slate-300">{hoveredMessage.from === -1 ? 'Client' : `Node ${hoveredMessage.from}`}</span>
+							<span className="text-slate-500 font-semibold">Target</span>
+							<span className="text-slate-300">{hoveredMessage.to === -1 ? 'Client' : `Node ${hoveredMessage.to}`}</span>
+							<span className="text-slate-500 font-semibold">Payload</span>
+							<span className="text-amber-400 font-medium">{hoveredMessage.payload}</span>
 							{hoveredMessage.conflicting && (
-								<div className="col-span-2 text-red-400 font-bold mt-1">⚠ CONFLICT DETECTED</div>
+								<div className="col-span-2 text-red-400 font-bold mt-2 flex items-center gap-1">
+									<span className="text-lg">⚠</span> CONFLICT DETECTED
+								</div>
 							)}
 						</div>
 					</motion.div>
@@ -189,47 +198,50 @@ export default function App(): React.ReactElement {
 			<AnimatePresence>
 				{hoveredNodeId !== null && hoveredNodeId !== -1 && nodeStats[hoveredNodeId] && (
 					<motion.div
-						initial={{ opacity: 0, y: 10 }}
-						animate={{ opacity: 1, y: 0 }}
-						exit={{ opacity: 0, y: 10 }}
-						className="fixed z-50 pointer-events-none bg-white/95 backdrop-blur text-slate-800 p-3 rounded-xl shadow-2xl border border-slate-200 text-xs"
+						initial={{ opacity: 0, y: 10, scale: 0.95 }}
+						animate={{ opacity: 1, y: 0, scale: 1 }}
+						exit={{ opacity: 0, y: 10, scale: 0.95 }}
+						className="fixed z-50 pointer-events-none bg-slate-900/40 backdrop-blur-xl text-white p-5 rounded-3xl shadow-3xl border border-white/10 text-xs min-w-[200px]"
 						style={{
 							left: mousePos.x + 20,
 							top: mousePos.y + 20,
 						}}
 					>
-						<div className="flex items-center gap-2 mb-2 border-b border-slate-100 pb-2">
-							<div className={`w-2 h-2 rounded-full ${nodes[hoveredNodeId].role === 'leader' ? 'bg-emerald-500' : 'bg-blue-500'}`} />
-							<span className="font-bold text-sm">
-								{nodes[hoveredNodeId].role === 'leader' ? 'LEADER' : `REPLICA ${hoveredNodeId}`}
-							</span>
+						<div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-3xl" />
+						<div className="relative flex items-center justify-between mb-4 border-b border-white/5 pb-3">
+							<div className="flex items-center gap-3">
+								<div className={`w-3 h-3 rounded-full animate-pulse shadow-[0_0_8px_rgba(0,0,0,0.5)] ${nodes[hoveredNodeId].role === 'leader' ? 'bg-emerald-400 shadow-emerald-400/50' : 'bg-indigo-400 shadow-indigo-400/50'}`} />
+								<span className="font-bold text-base tracking-tight italic">
+									{nodes[hoveredNodeId].role === 'leader' ? 'LEADER' : `REPLICA ${hoveredNodeId}`}
+								</span>
+							</div>
 							{nodes[hoveredNodeId].state === 'faulty' && (
-								<span className="bg-red-100 text-red-600 px-1.5 py-0.5 rounded text-[10px] font-bold">FAULTY</span>
+								<span className="bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full text-[10px] font-black border border-red-500/30 shadow-[0_0_10px_rgba(239,68,68,0.2)]">FAULTY</span>
 							)}
 						</div>
-						
-						<div className="space-y-2">
-							<div>
-								<div className="flex justify-between text-[10px] uppercase text-slate-500 font-semibold mb-0.5">
-									<span>Prepare Votes</span>
-									<span>{nodeStats[hoveredNodeId].prepare} / {2 * usePbftStore.getState().f + 1}</span>
+
+						<div className="relative space-y-4">
+							<div className="group">
+								<div className="flex justify-between text-[10px] uppercase text-slate-400 font-black mb-1.5 tracking-tighter">
+									<span>Prepare Quorum</span>
+									<span className="text-slate-200">{nodeStats[hoveredNodeId].prepare} <span className="text-slate-600">/</span> {2 * usePbftStore.getState().f + 1}</span>
 								</div>
-								<div className="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-									<div 
-										className="h-full bg-purple-400 rounded-full transition-all duration-300"
+								<div className="w-full h-2 bg-white/5 rounded-full overflow-hidden p-[1px]">
+									<div
+										className="h-full bg-gradient-to-r from-violet-600 to-indigo-400 rounded-full transition-all duration-700 ease-out shadow-[0_0_12px_rgba(139,92,246,0.3)]"
 										style={{ width: `${Math.min(100, (nodeStats[hoveredNodeId].prepare / (2 * usePbftStore.getState().f + 1)) * 100)}%` }}
 									/>
 								</div>
 							</div>
 
-							<div>
-								<div className="flex justify-between text-[10px] uppercase text-slate-500 font-semibold mb-0.5">
-									<span>Commit Votes</span>
-									<span>{nodeStats[hoveredNodeId].commit} / {2 * usePbftStore.getState().f + 1}</span>
+							<div className="group">
+								<div className="flex justify-between text-[10px] uppercase text-slate-400 font-black mb-1.5 tracking-tighter">
+									<span>Commit Quorum</span>
+									<span className="text-slate-200">{nodeStats[hoveredNodeId].commit} <span className="text-slate-600">/</span> {2 * usePbftStore.getState().f + 1}</span>
 								</div>
-								<div className="w-32 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-									<div 
-										className="h-full bg-amber-400 rounded-full transition-all duration-300"
+								<div className="w-full h-2 bg-white/5 rounded-full overflow-hidden p-[1px]">
+									<div
+										className="h-full bg-gradient-to-r from-amber-600 to-yellow-400 rounded-full transition-all duration-700 ease-out shadow-[0_0_12px_rgba(245,158,11,0.3)]"
 										style={{ width: `${Math.min(100, (nodeStats[hoveredNodeId].commit / (2 * usePbftStore.getState().f + 1)) * 100)}%` }}
 									/>
 								</div>
@@ -240,15 +252,16 @@ export default function App(): React.ReactElement {
 			</AnimatePresence>
 
 			{/* Title Overlay (Top Left) */}
-			<div className="absolute top-4 left-4 sm:top-6 sm:left-8 z-10 pointer-events-none">
-				<h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight bg-gradient-to-r from-slate-800 to-slate-600 bg-clip-text text-transparent drop-shadow-sm">
+			<div className="absolute top-6 left-6 sm:top-8 sm:left-10 z-10 pointer-events-none">
+				<h1 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tighter bg-gradient-to-br from-white via-indigo-200 to-slate-500 bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(99,102,241,0.3)] italic uppercase">
 					PBFT Visualizer
 				</h1>
-				<div className="flex items-center gap-2 sm:gap-3 mt-2">
-					<span className="px-2 py-0.5 rounded text-[10px] sm:text-[11px] font-bold tracking-wider uppercase bg-blue-100 text-blue-700 shadow-sm">
+				<div className="flex items-center gap-3 mt-4">
+					<span className="px-3 py-1 rounded-full text-[10px] sm:text-[11px] font-black tracking-widest uppercase bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 backdrop-blur-md shadow-[0_0_15px_rgba(99,102,241,0.1)]">
 						Phase: {phase}
 					</span>
-					<span className="text-xs sm:text-sm text-slate-500 font-medium">Round {round}</span>
+					<div className="w-1 h-1 rounded-full bg-slate-700" />
+					<span className="text-xs sm:text-sm text-slate-500 font-black tracking-widest uppercase italic opacity-80 underline decoration-indigo-500/30 underline-offset-4">Round {round}</span>
 				</div>
 			</div>
 

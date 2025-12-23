@@ -24,16 +24,21 @@ const NodeGlow = React.memo(({ active, color, radius }: { active: boolean; color
 
     useTick((delta) => {
         if (!active || !ref.current) return;
-        pulseRef.current += delta * 0.05;
-        const scale = 1 + Math.sin(pulseRef.current) * 0.05;
+        pulseRef.current += delta * 0.04;
+        const scale = 1 + Math.sin(pulseRef.current) * 0.08;
         ref.current.scale.set(scale);
-        ref.current.alpha = 0.6 + Math.sin(pulseRef.current) * 0.2;
+        ref.current.alpha = 0.4 + Math.sin(pulseRef.current) * 0.15;
     });
 
     const draw = useCallback((g: any) => {
         g.clear();
-        g.beginFill(color);
-        g.drawCircle(0, 0, radius + 5);
+        // Outer soft bloom
+        g.beginFill(color, 0.2);
+        g.drawCircle(0, 0, radius + 15);
+        g.endFill();
+        // Inner stronger glow
+        g.beginFill(color, 0.4);
+        g.drawCircle(0, 0, radius + 8);
         g.endFill();
     }, [color, radius]);
 
@@ -44,7 +49,7 @@ const NodeGlow = React.memo(({ active, color, radius }: { active: boolean; color
 const NodeBase = React.memo(({ isClient, isLeader, isFaulty, radius, hovered }: { isClient: boolean; isLeader: boolean; isFaulty: boolean; radius: number; hovered: boolean }) => {
     const draw = useCallback((g: any) => {
         g.clear();
-        
+
         // Colors
         let fillColor = COLORS.node.idle;
         let strokeColor = COLORS.stroke.idle;
@@ -60,51 +65,63 @@ const NodeBase = React.memo(({ isClient, isLeader, isFaulty, radius, hovered }: 
             strokeColor = COLORS.stroke.leader;
         }
 
-        const borderWidth = hovered ? 4 : 3;
+        const borderWidth = hovered ? 4 : 2;
 
-        // Shadow
-        g.beginFill(0x000000, 0.3);
-        g.drawCircle(4, 4, radius);
+        // Dynamic gradient simulation with multiple circles
+        // 1. Shadow
+        g.beginFill(0x000000, 0.4);
+        g.drawCircle(6, 6, radius);
         g.endFill();
 
-        // Main Circle
+        // 2. Main Border / Inner Glow
+        g.lineStyle(borderWidth, strokeColor, 0.8);
         g.beginFill(fillColor);
-        g.lineStyle(borderWidth, strokeColor);
         g.drawCircle(0, 0, radius);
+        g.endFill();
+
+        // 3. Top Highlight (3D Effect)
+        g.lineStyle(0);
+        g.beginFill(0xffffff, 0.1);
+        g.drawEllipse(-radius * 0.2, -radius * 0.3, radius * 0.5, radius * 0.3);
         g.endFill();
 
         // Faulty Cross
         if (isFaulty) {
-            g.lineStyle(4, COLORS.stroke.faulty, 0.8);
-            const s = radius * 0.4;
+            g.lineStyle(5, 0xffffff, 0.5);
+            const s = radius * 0.35;
             g.moveTo(-s, -s);
             g.lineTo(s, s);
             g.moveTo(s, -s);
             g.lineTo(-s, s);
         }
 
-        // Leader Crown
+        // Leader Crown - More Majestic
         if (isLeader && !isClient) {
-            const crownY = -radius - 18;
-            const crownWidth = 24;
-            const crownHeight = 14;
-            
-            g.lineStyle(1, 0xf59e0b); // Amber-500
-            g.beginFill(0xfbbf24);    // Amber-400
+            const crownY = -radius - 22;
+            const crownWidth = 28;
+            const crownHeight = 16;
+
+            // Outer glow for crown
+            g.lineStyle(0);
+            g.beginFill(0xfbbf24, 0.3);
+            g.drawCircle(0, crownY + 8, 15);
+            g.endFill();
+
+            g.lineStyle(1.5, 0xffffff, 0.5);
+            g.beginFill(0xf59e0b);    // Amber-500
             g.moveTo(-crownWidth / 2, crownY + crownHeight);
             g.lineTo(-crownWidth / 2, crownY + 4);
-            g.lineTo(-crownWidth / 4, crownY + 8);
+            g.lineTo(-crownWidth / 3, crownY + 10);
             g.lineTo(0, crownY);
-            g.lineTo(crownWidth / 4, crownY + 8);
+            g.lineTo(crownWidth / 3, crownY + 10);
             g.lineTo(crownWidth / 2, crownY + 4);
             g.lineTo(crownWidth / 2, crownY + crownHeight);
             g.closePath();
             g.endFill();
 
             // Jewel
-            g.beginFill(0xdc2626); // Red
-            g.lineStyle(0);
-            g.drawCircle(0, crownY + 4, 2);
+            g.beginFill(0xffffff);
+            g.drawCircle(0, crownY + 4, 2.5);
             g.endFill();
         }
 
@@ -114,12 +131,12 @@ const NodeBase = React.memo(({ isClient, isLeader, isFaulty, radius, hovered }: 
 });
 
 // 3. Vote Slots & Status Badge (Updates on state change)
-const NodeStatusOverlay = React.memo(({ 
-    radius, status, isFaulty, phase, prepareCount, commitCount, needed 
-}: { 
-    radius: number; status: string; isFaulty: boolean; phase: string; prepareCount: number; commitCount: number; needed: number 
+const NodeStatusOverlay = React.memo(({
+    radius, status, isFaulty, phase, prepareCount, commitCount, needed
+}: {
+    radius: number; status: string; isFaulty: boolean; phase: string; prepareCount: number; commitCount: number; needed: number
 }) => {
-    
+
     const draw = useCallback((g: any) => {
         g.clear();
         if (isFaulty) return; // Faulty nodes might not show normal status rings
@@ -160,11 +177,11 @@ const NodeStatusOverlay = React.memo(({
         if (showCommit) {
             const outerRadius = arcRadius + 8;
             const progress = Math.min(commitCount / needed, 1);
-            
+
             // Background
             g.lineStyle(arcWidth, COLORS.ui.voteSlotBg, 0.3);
             g.arc(0, 0, outerRadius, Math.PI * 0.8, Math.PI * 2.2);
-            
+
             // Progress
             if (progress > 0) {
                 const start = Math.PI * 0.8;
@@ -172,13 +189,13 @@ const NodeStatusOverlay = React.memo(({
                 g.lineStyle(arcWidth, COLORS.status.committed);
                 g.arc(0, 0, outerRadius, start, end);
             }
-             // Threshold Tick
-             const endAngle = Math.PI * 0.8 + (Math.PI * 1.4);
-             g.lineStyle(2, COLORS.ui.voteSlotThreshold, 0.5);
-             const r1 = outerRadius - 4;
-             const r2 = outerRadius + 4;
-             g.moveTo(r1 * Math.cos(endAngle), r1 * Math.sin(endAngle));
-             g.lineTo(r2 * Math.cos(endAngle), r2 * Math.sin(endAngle));
+            // Threshold Tick
+            const endAngle = Math.PI * 0.8 + (Math.PI * 1.4);
+            g.lineStyle(2, COLORS.ui.voteSlotThreshold, 0.5);
+            const r1 = outerRadius - 4;
+            const r2 = outerRadius + 4;
+            g.moveTo(r1 * Math.cos(endAngle), r1 * Math.sin(endAngle));
+            g.lineTo(r2 * Math.cos(endAngle), r2 * Math.sin(endAngle));
         }
 
         // --- Status Badge ---
@@ -216,11 +233,11 @@ const NodeLog = React.memo(({ radius, round }: { radius: number; round: number }
             g.drawRect(startX, startY - (i * (blockH + 2)), blockW, blockH);
             g.endFill();
         }
-        
+
         if (committedBlocks > 5) {
-             g.beginFill(0xffffff);
-             g.drawCircle(startX + blockW/2, startY - (5 * (blockH + 2)) - 2, 1.5);
-             g.endFill();
+            g.beginFill(0xffffff);
+            g.drawCircle(startX + blockW / 2, startY - (5 * (blockH + 2)) - 2, 1.5);
+            g.endFill();
         }
     }, [radius, round]);
 
@@ -232,22 +249,27 @@ const ActionBubble = React.memo(({ text, radius }: { text: string; radius: numbe
     const draw = useCallback((g: any) => {
         g.clear();
         if (!text) return;
-        
-        const bubbleW = 100;
-        const bubbleH = 24;
-        const bubbleY = -radius - 35;
-        
+
+        const bubbleW = 120;
+        const bubbleH = 28;
+        const bubbleY = -radius - 40;
+
+        // Shadow for bubble
+        g.beginFill(0x000000, 0.3);
+        g.drawRoundedRect(-bubbleW / 2 + 2, bubbleY - bubbleH / 2 + 2, bubbleW, bubbleH, 14);
+        g.endFill();
+
         // Tail
         g.beginFill(COLORS.ui.bubbleBg);
-        g.moveTo(0, -radius - 10);
-        g.lineTo(-6, bubbleY + bubbleH/2);
-        g.lineTo(6, bubbleY + bubbleH/2);
+        g.moveTo(0, -radius - 12);
+        g.lineTo(-8, bubbleY + bubbleH / 2);
+        g.lineTo(8, bubbleY + bubbleH / 2);
         g.endFill();
 
         // Body
         g.beginFill(COLORS.ui.bubbleBg);
-        g.lineStyle(1, COLORS.ui.bubbleBorder);
-        g.drawRoundedRect(-bubbleW/2, bubbleY - bubbleH/2, bubbleW, bubbleH, 12);
+        g.lineStyle(1.5, COLORS.ui.bubbleBorder, 0.5);
+        g.drawRoundedRect(-bubbleW / 2, bubbleY - bubbleH / 2, bubbleW, bubbleH, 14);
         g.endFill();
     }, [text, radius]);
 
@@ -268,14 +290,14 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
 
     const displayId = isClient ? 'C' : node.id.toString();
     const displayLabel = isClient ? 'CLIENT' : (isLeader ? 'LEADER' : `REPLICA ${node.id}`);
-    
+
     // Status Label
     const statusLabel = isFaulty ? 'FAULTY' : (status === 'idle' ? '' : (status === 'proposed' ? 'READY' : status.toUpperCase()));
     const showStatus = (status !== 'idle' || isFaulty) && statusLabel !== '';
 
     const needed = 2 * f + 1;
-    const radius = isClient ? 28 : 38;
-    
+    const radius = isClient ? 30 : 42;
+
     // Action Bubble Logic
     const [bubbleText, setBubbleText] = React.useState<string | null>(null);
     const bubbleTimerRef = useRef<any>(null);
@@ -307,45 +329,46 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
 
     // Styles
     const textStyle = useMemo(() => new TextStyle({
-        fill: COLORS.ui.text,
-        fontSize: (isClient ? 14 : 20) * fontScale,
-        fontWeight: 'bold',
+        fill: 0xffffff,
+        fontSize: (isClient ? 16 : 24) * fontScale,
+        fontWeight: '900',
         align: 'center',
+        fontStyle: 'italic',
         dropShadow: true,
         dropShadowColor: '#000000',
-        dropShadowBlur: 2,
-        dropShadowDistance: 1,
+        dropShadowBlur: 4,
+        dropShadowDistance: 2,
     }), [isClient, fontScale]);
 
     const labelStyle = useMemo(() => new TextStyle({
         fill: COLORS.ui.label,
-        fontSize: 11 * fontScale,
-        fontWeight: 'bold',
+        fontSize: 10 * fontScale,
+        fontWeight: '900',
+        letterSpacing: 1,
         align: 'center',
     }), [fontScale]);
 
     const statusStyle = useMemo(() => new TextStyle({
-        fill: COLORS.ui.text,
-        fontSize: 10 * fontScale,
-        fontWeight: 'bold',
+        fill: 0xffffff,
+        fontSize: 9 * fontScale,
+        fontWeight: '900',
         align: 'center',
-        dropShadow: true,
-        dropShadowColor: '#000000',
-        dropShadowBlur: 2,
-        dropShadowDistance: 1,
+        letterSpacing: 0.5,
     }), [fontScale]);
 
     const bubbleTextStyle = useMemo(() => new TextStyle({
-        fill: COLORS.ui.bubbleText,
+        fill: 0xffffff,
         fontSize: 10 * fontScale,
-        fontWeight: 'bold',
+        fontWeight: '900',
         align: 'center',
+        fontStyle: 'italic',
     }), [fontScale]);
 
     // Determine Glow Color
-    let glowColor = 0xffffff;
+    let glowColor = isClient ? 0x6366f1 : 0xffffff;
     if (isFaulty) glowColor = COLORS.node.faulty;
-    
+    if (isLeader) glowColor = COLORS.node.leader;
+
     return (
         <Container
             x={x}
@@ -356,24 +379,24 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
             cursor="pointer"
         >
             {/* 1. Glow (Animated) */}
-            <NodeGlow 
-                active={hovered || isFaulty} 
-                color={glowColor} 
-                radius={radius} 
+            <NodeGlow
+                active={hovered || isFaulty || isLeader}
+                color={glowColor}
+                radius={radius}
             />
 
             {/* 2. Base Shape (Static) */}
-            <NodeBase 
-                isClient={isClient} 
-                isLeader={isLeader} 
-                isFaulty={isFaulty} 
-                radius={radius} 
+            <NodeBase
+                isClient={isClient}
+                isLeader={isLeader}
+                isFaulty={isFaulty}
+                radius={radius}
                 hovered={hovered}
             />
 
             {/* 3. Status & Votes (Dynamic) */}
             {!isClient && (
-                <NodeStatusOverlay 
+                <NodeStatusOverlay
                     radius={radius}
                     status={status}
                     isFaulty={isFaulty}
@@ -393,18 +416,16 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
             )}
 
             {/* Text Labels */}
-            {!isClient && (
-                <Text
-                    text={displayId}
-                    anchor={0.5}
-                    y={2}
-                    style={textStyle}
-                />
-            )}
+            <Text
+                text={displayId}
+                anchor={0.5}
+                y={2}
+                style={textStyle}
+            />
             <Text
                 text={displayLabel}
                 anchor={0.5}
-                y={radius + 14}
+                y={radius + 18}
                 style={labelStyle}
             />
             {showStatus && (
@@ -419,7 +440,7 @@ export default function PixiNode({ node, x, y, hovered, status = 'idle', prepare
                 <Text
                     text={bubbleText}
                     anchor={0.5}
-                    y={-radius - 35}
+                    y={-radius - 40}
                     style={bubbleTextStyle}
                 />
             )}
