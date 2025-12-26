@@ -192,5 +192,11 @@ export const replyScene: Scene = {
       narration: 'Client waits for f+1 replies with same result.',
       messages: [],
     },
+    {
+      atMs: STEP_MS * 2,
+      narration: 'Client received sufficient matching replies. Round complete!',
+      messages: [],
+    },
   ],
 };
+

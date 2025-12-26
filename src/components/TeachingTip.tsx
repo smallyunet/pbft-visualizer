@@ -77,7 +77,7 @@ export default function TeachingTip(): React.ReactElement | null {
         setDismissed(false);
     }, [phase]);
 
-    // Auto-advance tips
+    // Auto-advance tips - reduced from 5s to 3s for better UX
     useEffect(() => {
         if (!playing || dismissed) return;
 
@@ -85,7 +85,7 @@ export default function TeachingTip(): React.ReactElement | null {
             if (tipIndex < tips.length - 1) {
                 setTipIndex(tipIndex + 1);
             }
-        }, 5000);
+        }, 3000);
 
         return () => clearTimeout(timer);
     }, [tipIndex, playing, tips.length, dismissed]);

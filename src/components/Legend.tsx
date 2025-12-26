@@ -41,23 +41,23 @@ export default function Legend() {
           <div className="text-[9px] uppercase text-slate-500 font-black mb-3 tracking-widest">Quorum Progress</div>
           <div className="flex items-center justify-between">
             <div className="flex flex-col items-center gap-2">
-              <div className="relative w-8 h-8 flex items-center justify-center">
+              <div className="relative w-12 h-12 flex items-center justify-center">
                 <svg viewBox="0 0 24 24" className="w-full h-full rotate-[-90deg]">
                   <circle cx="12" cy="12" r="8" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
                   <circle cx="12" cy="12" r="8" fill="none" stroke="#8b5cf6" strokeWidth="3" strokeDasharray="25 50" strokeLinecap="round" className="drop-shadow-[0_0_3px_rgba(139,92,246,0.5)]" />
                 </svg>
               </div>
-              <span className="text-slate-500 font-black text-[8px] uppercase tracking-tighter">Prepare</span>
+              <span className="text-slate-400 font-black text-[10px] uppercase tracking-tight">Prepare</span>
             </div>
-            <div className="w-px h-8 bg-white/5" />
+            <div className="w-px h-12 bg-white/5" />
             <div className="flex flex-col items-center gap-2">
-              <div className="relative w-8 h-8 flex items-center justify-center">
+              <div className="relative w-12 h-12 flex items-center justify-center">
                 <svg viewBox="0 0 24 24" className="w-full h-full rotate-[-90deg]">
                   <circle cx="12" cy="12" r="10" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="3" />
                   <circle cx="12" cy="12" r="10" fill="none" stroke="#f59e0b" strokeWidth="3" strokeDasharray="35 60" strokeLinecap="round" className="drop-shadow-[0_0_3px_rgba(245,158,11,0.5)]" />
                 </svg>
               </div>
-              <span className="text-slate-500 font-black text-[8px] uppercase tracking-tighter">Commit</span>
+              <span className="text-slate-400 font-black text-[10px] uppercase tracking-tight">Commit</span>
             </div>
           </div>
         </div>

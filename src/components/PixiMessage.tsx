@@ -94,14 +94,18 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
     const finishedRef = useRef(false);
 
     useTick(() => {
-        if (finishedRef.current) return;
+        // If already finished, keep elements hidden
+        if (finishedRef.current) {
+            hideAllElements();
+            return;
+        }
 
         const currentTime = usePbftStore.getState().t;
         const age = currentTime - startAt;
         const rawProgress = age / durationMs;
         const progress = rawProgress <= 1 ? easeOutCubic(rawProgress) : rawProgress;
 
-        const receiptDurationMs = 700;
+        const receiptDurationMs = 400; // Reduced from 700ms for faster cleanup
         const receiptProgress = (age - durationMs) / receiptDurationMs;
 
         // Phase 1: Message in flight - envelope animation
@@ -117,7 +121,7 @@ export default function PixiMessage({ message, from, to, kind, conflicting, star
             hideFlightElements();
             renderReceipt(receiptProgress);
         }
-        // Phase 3: Done
+        // Phase 3: Done - hide everything and mark as finished
         else {
             hideAllElements();
             finishedRef.current = true;
