@@ -74,6 +74,7 @@ export default function ControlPanel(): React.ReactElement {
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black tracking-widest uppercase transition-all duration-300 bg-indigo-600 text-white hover:bg-indigo-500 shadow-[0_0_20px_rgba(79,70,229,0.3)] border border-indigo-400/50"
                 onClick={() => triggerRequest()}
                 title="Send Client Request"
+                aria-label="Send Client Request"
               >
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -88,6 +89,7 @@ export default function ControlPanel(): React.ReactElement {
               whileTap={{ scale: 0.95 }}
               className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-black tracking-[0.2em] uppercase transition-all duration-500 ${playing ? 'bg-amber-400/20 text-amber-400 border border-amber-400/30 shadow-[0_0_15px_rgba(245,158,11,0.2)]' : 'bg-white text-slate-900 hover:bg-slate-100 shadow-[0_0_25px_rgba(255,255,255,0.2)]'}`}
               onClick={() => togglePlay()}
+              aria-label={playing ? "Pause Simulation" : "Play Simulation"}
             >
               {playing ? (
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round">
@@ -108,6 +110,7 @@ export default function ControlPanel(): React.ReactElement {
               className="p-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-all duration-300"
               onClick={() => step(600)}
               title="Step Forward"
+              aria-label="Step Forward"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="5 4 15 12 5 20 5 4"></polygon>
@@ -129,6 +132,7 @@ export default function ControlPanel(): React.ReactElement {
               whileTap={{ scale: 0.95 }}
               className="flex items-center gap-2 px-3 py-2 rounded-xl hover:bg-white/10 text-slate-400 hover:text-white transition-all duration-300 text-xs font-black tracking-widest uppercase"
               onClick={() => setExpanded(true)}
+              aria-label="Open Settings"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3"></circle>
@@ -155,6 +159,7 @@ export default function ControlPanel(): React.ReactElement {
               <button
                 onClick={() => setExpanded(false)}
                 className="p-2 hover:bg-white/10 rounded-full text-slate-500 hover:text-white transition-all duration-300"
+                aria-label="Close Settings"
               >
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 15l-6-6-6 6" />
@@ -176,8 +181,8 @@ export default function ControlPanel(): React.ReactElement {
 
                 <div className="mt-2 space-y-3">
                   <div className="flex items-center justify-between group">
-                    <span className="text-xs font-bold text-slate-400">Simulation Speed</span>
-                    <select className="bg-slate-800/50 border border-white/5 rounded-lg px-2 py-1 text-xs font-bold text-white outline-none" value={speed} onChange={(e) => setSpeed(parseFloat(e.target.value))}>
+                    <label htmlFor="speed-select" className="text-xs font-bold text-slate-400">Simulation Speed</label>
+                    <select id="speed-select" className="bg-slate-800/50 border border-white/5 rounded-lg px-2 py-1 text-xs font-bold text-white outline-none" value={speed} onChange={(e) => setSpeed(parseFloat(e.target.value))}>
                       <option value={0.5}>0.5x Slow</option>
                       <option value={1}>1.0x Normal</option>
                       <option value={2}>2.0x Fast</option>
@@ -186,8 +191,8 @@ export default function ControlPanel(): React.ReactElement {
                   </div>
 
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter">Auto-step Phases</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter" id="auto-step-label">Auto-step Phases</span>
+                    <label className="relative inline-flex items-center cursor-pointer" aria-labelledby="auto-step-label">
                       <input type="checkbox" checked={autoAdvance} onChange={(e) => setAutoAdvance(e.target.checked)} className="sr-only peer" />
                       <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                     </label>
@@ -226,10 +231,11 @@ export default function ControlPanel(): React.ReactElement {
                 <div className="space-y-4">
                   <div className="group">
                     <div className="flex justify-between text-[11px] font-bold text-slate-400 mb-2">
-                      <span>Network Jitter</span>
+                      <label htmlFor="jitter-range">Network Jitter</label>
                       <span className="text-indigo-400 font-black">{jitter}ms</span>
                     </div>
                     <input
+                      id="jitter-range"
                       type="range"
                       min="0"
                       max="2000"

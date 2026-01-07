@@ -1,6 +1,6 @@
 {
 	"name": "pbft-visualizer",
-	"version": "0.3.0",
+	"version": "0.0.6",
 	"private": true,
 	"type": "module",
 	"scripts": {

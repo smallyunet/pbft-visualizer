@@ -14,7 +14,7 @@ import TeachingTip from './components/TeachingTip';
 import SimulationTicker from './components/SimulationTicker';
 import CentralStatus from './components/CentralStatus';
 import { STEP_MS } from './data/phases';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 
 
 export default function App(): React.ReactElement {
@@ -41,6 +41,9 @@ export default function App(): React.ReactElement {
 
 
 	// Timer loop removed in favor of SimulationTicker inside CanvasStage
+
+
+	const shouldReduceMotion = useReducedMotion();
 
 	const [size, setSize] = useState({ w: window.innerWidth, h: window.innerHeight });
 
@@ -113,7 +116,9 @@ export default function App(): React.ReactElement {
 						// Calculate animation duration based on STEP_MS and speed
 						// Clamp between 0.5s and 3.0s for smooth visibility
 						const baseDuration = (STEP_MS / 1000) / speed;
-						const durationSec = Math.max(0.5, Math.min(3.0, baseDuration * 0.9));
+						// If reduced motion is preferred, make message travel almost instant (0.05s) to avoid motion sickness
+						// whilst still showing the flow logically.
+						const durationSec = shouldReduceMotion ? 0.05 : Math.max(0.5, Math.min(3.0, baseDuration * 0.9));
 
 						return (
 							<PixiMessage
@@ -163,9 +168,9 @@ export default function App(): React.ReactElement {
 			<AnimatePresence>
 				{hoveredMessage && (
 					<motion.div
-						initial={{ opacity: 0, scale: 0.9 }}
+						initial={{ opacity: 0, scale: shouldReduceMotion ? 1 : 0.9 }}
 						animate={{ opacity: 1, scale: 1 }}
-						exit={{ opacity: 0, scale: 0.9 }}
+						exit={{ opacity: 0, scale: shouldReduceMotion ? 1 : 0.9 }}
 						className="fixed z-50 pointer-events-none bg-slate-900/40 backdrop-blur-xl text-white p-4 rounded-2xl shadow-2xl border border-white/10 text-xs font-mono"
 						style={{
 							left: mousePos.x + 15,
@@ -198,9 +203,9 @@ export default function App(): React.ReactElement {
 			<AnimatePresence>
 				{hoveredNodeId !== null && hoveredNodeId !== -1 && nodeStats[hoveredNodeId] && (
 					<motion.div
-						initial={{ opacity: 0, y: 10, scale: 0.95 }}
+						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 10, scale: shouldReduceMotion ? 1 : 0.95 }}
 						animate={{ opacity: 1, y: 0, scale: 1 }}
-						exit={{ opacity: 0, y: 10, scale: 0.95 }}
+						exit={{ opacity: 0, y: shouldReduceMotion ? 0 : 10, scale: shouldReduceMotion ? 1 : 0.95 }}
 						className="fixed z-50 pointer-events-none bg-slate-900/40 backdrop-blur-xl text-white p-5 rounded-3xl shadow-3xl border border-white/10 text-xs min-w-[200px]"
 						style={{
 							left: mousePos.x + 20,
@@ -210,7 +215,7 @@ export default function App(): React.ReactElement {
 						<div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-3xl" />
 						<div className="relative flex items-center justify-between mb-4 border-b border-white/5 pb-3">
 							<div className="flex items-center gap-3">
-								<div className={`w-3 h-3 rounded-full animate-pulse shadow-[0_0_8px_rgba(0,0,0,0.5)] ${nodes[hoveredNodeId].role === 'leader' ? 'bg-emerald-400 shadow-emerald-400/50' : 'bg-indigo-400 shadow-indigo-400/50'}`} />
+								<div className={`w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)] ${!shouldReduceMotion && 'animate-pulse'} ${nodes[hoveredNodeId].role === 'leader' ? 'bg-emerald-400 shadow-emerald-400/50' : 'bg-indigo-400 shadow-indigo-400/50'}`} />
 								<span className="font-bold text-base tracking-tight italic">
 									{nodes[hoveredNodeId].role === 'leader' ? 'LEADER' : `REPLICA ${hoveredNodeId}`}
 								</span>
