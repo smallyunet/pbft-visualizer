@@ -105,9 +105,9 @@ export default function App(): React.ReactElement {
 		<div className="min-h-screen bg-slate-950 overflow-hidden font-sans text-slate-200 selection:bg-indigo-500/30" style={{ fontSize: `${fontScale * 16}px` }}>
 			{/* Main Canvas Area - Full Screen */}
 			<div className="absolute inset-0 z-0 flex items-center justify-center bg-[#020617]">
-				<div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(30,58,138,0.2),_transparent_70%)]" />
-				<div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,_rgba(79,70,229,0.1),_transparent_50%)]" />
-				<div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,_rgba(147,51,234,0.1),_transparent_50%)]" />
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(30,58,138,0.15),_transparent_70%)]" />
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,_rgba(79,70,229,0.08),_transparent_60%)]" />
+				<div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_70%,_rgba(147,51,234,0.08),_transparent_60%)]" />
 				<CanvasStage width={size.w} height={size.h} className="w-full h-full max-w-[100vw] max-h-[100vh]">
 					<SimulationTicker />
 
@@ -171,13 +171,13 @@ export default function App(): React.ReactElement {
 						initial={{ opacity: 0, scale: shouldReduceMotion ? 1 : 0.9 }}
 						animate={{ opacity: 1, scale: 1 }}
 						exit={{ opacity: 0, scale: shouldReduceMotion ? 1 : 0.9 }}
-						className="fixed z-50 pointer-events-none bg-slate-900/40 backdrop-blur-xl text-white p-4 rounded-2xl shadow-2xl border border-white/10 text-xs font-mono"
+						className="fixed z-50 pointer-events-none bg-slate-900/60 backdrop-blur-2xl text-white p-4 rounded-2xl shadow-2xl border border-white/10 text-xs font-mono"
 						style={{
 							left: mousePos.x + 15,
 							top: mousePos.y + 15,
 						}}
 					>
-						<div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent rounded-2xl" />
+						<div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent rounded-2xl" />
 						<div className="relative font-bold text-indigo-400 mb-2 tracking-widest uppercase flex items-center gap-2">
 							<div className="w-1 h-3 bg-indigo-500 rounded-full" />
 							{hoveredMessage.kind}
@@ -206,13 +206,13 @@ export default function App(): React.ReactElement {
 						initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 10, scale: shouldReduceMotion ? 1 : 0.95 }}
 						animate={{ opacity: 1, y: 0, scale: 1 }}
 						exit={{ opacity: 0, y: shouldReduceMotion ? 0 : 10, scale: shouldReduceMotion ? 1 : 0.95 }}
-						className="fixed z-50 pointer-events-none bg-slate-900/40 backdrop-blur-xl text-white p-5 rounded-3xl shadow-3xl border border-white/10 text-xs min-w-[200px]"
+						className="fixed z-50 pointer-events-none bg-slate-900/60 backdrop-blur-2xl text-white p-5 rounded-3xl shadow-3xl border border-white/10 text-xs min-w-[200px]"
 						style={{
 							left: mousePos.x + 20,
 							top: mousePos.y + 20,
 						}}
 					>
-						<div className="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-3xl" />
+						<div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-transparent rounded-3xl" />
 						<div className="relative flex items-center justify-between mb-4 border-b border-white/5 pb-3">
 							<div className="flex items-center gap-3">
 								<div className={`w-3 h-3 rounded-full shadow-[0_0_8px_rgba(0,0,0,0.5)] ${!shouldReduceMotion && 'animate-pulse'} ${nodes[hoveredNodeId].role === 'leader' ? 'bg-emerald-400 shadow-emerald-400/50' : 'bg-indigo-400 shadow-indigo-400/50'}`} />
