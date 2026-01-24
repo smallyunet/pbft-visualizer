@@ -357,7 +357,10 @@ export const usePbftStore = create<PbftState>((set, get) => {
 			}
 		},
 
-		setSpeed: (s) => set({ speed: s }),
+		setSpeed: (s) => {
+			set({ speed: s });
+			savePrefs({ ...get(), speed: s });
+		},
 		setAutoAdvance: (on) => {
 			set({ autoAdvance: on, phaseAdvanceDueAt: on ? get().phaseAdvanceDueAt : null });
 			savePrefs(get());

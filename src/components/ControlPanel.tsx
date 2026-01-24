@@ -7,7 +7,7 @@ import { shallow } from 'zustand/shallow';
 export default function ControlPanel(): React.ReactElement {
   const [expanded, setExpanded] = useState(false);
 
-  const { phase, resetPhase, resetAll, playing, togglePlay, step, speed, setSpeed, nodes, toggleFaulty, n, f, autoAdvance, setAutoAdvance, round, resetViewPrefs, viewMode, setViewMode, manualMode, setManualMode, jitter, setJitter, triggerRequest, view, rotateLeader, showHistory, setShowHistory, focusCurrentPhase, setFocusCurrentPhase } = usePbftStore(
+  const { phase, resetPhase, resetAll, skipPhase, playing, togglePlay, step, speed, setSpeed, nodes, toggleFaulty, n, f, autoAdvance, setAutoAdvance, phaseDelayMs, setPhaseDelay, round, resetViewPrefs, viewMode, setViewMode, manualMode, setManualMode, jitter, setJitter, triggerRequest, view, rotateLeader, showHistory, setShowHistory, focusCurrentPhase, setFocusCurrentPhase } = usePbftStore(
     (s) => ({
       phase: s.phase,
       setPhase: s.setPhase,
@@ -177,6 +177,7 @@ export default function ControlPanel(): React.ReactElement {
                   <button className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold transition-all text-white" onClick={() => resetAll()}>Reset System</button>
                   <button className="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-xs font-bold transition-all text-white" onClick={() => resetPhase()}>Reset Phase</button>
                   <button className="col-span-2 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/20 text-xs font-bold transition-all text-amber-400" onClick={() => rotateLeader()}>Rotate Primary Node</button>
+                  <button className="col-span-2 px-3 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-xs font-bold transition-all text-indigo-300" onClick={() => skipPhase()}>Skip Phase</button>
                 </div>
 
                 <div className="mt-2 space-y-3">
@@ -190,10 +191,35 @@ export default function ControlPanel(): React.ReactElement {
                     </select>
                   </div>
 
+                  <div className="group">
+                    <div className="flex justify-between text-[11px] font-bold text-slate-400 mb-2">
+                      <label htmlFor="phase-delay-range">Phase Delay</label>
+                      <span className="text-indigo-400 font-black">{(phaseDelayMs / 1000).toFixed(2)}s</span>
+                    </div>
+                    <input
+                      id="phase-delay-range"
+                      type="range"
+                      min="0"
+                      max="4000"
+                      step="250"
+                      value={phaseDelayMs}
+                      onChange={(e) => setPhaseDelay(parseInt(e.target.value))}
+                      className="w-full h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                    />
+                  </div>
+
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter" id="auto-step-label">Auto-step Phases</span>
                     <label className="relative inline-flex items-center cursor-pointer" aria-labelledby="auto-step-label">
                       <input type="checkbox" checked={autoAdvance} onChange={(e) => setAutoAdvance(e.target.checked)} className="sr-only peer" />
+                      <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                    </label>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-tighter" id="manual-mode-label">Manual Mode</span>
+                    <label className="relative inline-flex items-center cursor-pointer" aria-labelledby="manual-mode-label">
+                      <input type="checkbox" checked={manualMode} onChange={(e) => setManualMode(e.target.checked)} className="sr-only peer" />
                       <div className="w-9 h-5 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                     </label>
                   </div>

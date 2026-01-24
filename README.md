@@ -32,6 +32,19 @@ npm preview
 - Step button advances 600ms inclusive of boundary conditions for phase steps.
 - Auto‑advance can be disabled for guided demonstrations.
 - Timeline inclusion condition fixed (was excluding events when next == atMs).
+- v0.0.8: Speed selection now persists across reloads; Manual Mode + Phase Delay are adjustable from Settings; added keyboard shortcuts for demos.
+
+### Keyboard shortcuts
+
+- `Space`: Play/Pause
+- `→`: Step 600ms
+- `S`: Skip Phase
+- `R`: Reset Phase
+- `Shift+R`: Reset System
+- `L`: Rotate Primary Node (View Change)
+- `M`: Toggle Manual Mode
+- `H`: Toggle History
+- `F`: Toggle Phase Focus
 
 Educational use only.# pbft-visualizer
 

@@ -55,6 +55,62 @@ export default function App(): React.ReactElement {
 		return () => window.removeEventListener('resize', handleResize);
 	}, []);
 
+	useEffect(() => {
+		const shouldIgnore = (target: EventTarget | null): boolean => {
+			if (!target || !(target as HTMLElement).tagName) return false;
+			const el = target as HTMLElement;
+			if (el.isContentEditable) return true;
+			const tag = el.tagName.toLowerCase();
+			return tag === 'input' || tag === 'textarea' || tag === 'select' || tag === 'button';
+		};
+
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.repeat) return;
+			if (shouldIgnore(e.target)) return;
+			const s = usePbftStore.getState();
+			const key = e.key;
+
+			if (key === ' ') {
+				e.preventDefault();
+				s.togglePlay();
+				return;
+			}
+			if (key === 'ArrowRight') {
+				e.preventDefault();
+				s.step(600);
+				return;
+			}
+			if (key === 's' || key === 'S') {
+				s.skipPhase();
+				return;
+			}
+			if (key === 'r' || key === 'R') {
+				if (e.shiftKey) s.resetAll();
+				else s.resetPhase();
+				return;
+			}
+			if (key === 'l' || key === 'L') {
+				s.rotateLeader();
+				return;
+			}
+			if (key === 'm' || key === 'M') {
+				s.setManualMode(!s.manualMode);
+				return;
+			}
+			if (key === 'h' || key === 'H') {
+				s.setShowHistory(!s.showHistory);
+				return;
+			}
+			if (key === 'f' || key === 'F') {
+				s.setFocusCurrentPhase(!s.focusCurrentPhase);
+				return;
+			}
+		};
+
+		window.addEventListener('keydown', onKeyDown);
+		return () => window.removeEventListener('keydown', onKeyDown);
+	}, []);
+
 	const center = { x: size.w / 2, y: size.h / 2 };
 
 	// Layout Calculations
